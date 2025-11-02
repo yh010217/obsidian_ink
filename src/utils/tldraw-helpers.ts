@@ -1,4 +1,4 @@
-import { Editor, HistoryEntry, TLStoreSnapshot, TLRecord, TLShape, TLShapeId, TLUnknownShape, setUserPreferences, Box, TLEditorSnapshot } from "@tldraw/tldraw";
+import { Editor, HistoryEntry, TLStoreSnapshot, TLRecord, TLShape, TLShapeId, TLUnknownShape, setUserPreferences, Box, TLEditorSnapshot, createTLStore, defaultShapeUtils, defaultBindingUtils, defaultTools, loadSnapshot } from "@tldraw/tldraw";
 import { WRITE_STROKE_LIMIT, WRITING_LINE_HEIGHT, WRITING_MIN_PAGE_HEIGHT, WRITING_PAGE_WIDTH } from "src/constants";
 import { useRef } from 'react';
 import InkPlugin from "src/main";
@@ -7,6 +7,7 @@ import { WritingLines } from "src/tldraw/writing-shapes/writing-lines";
 import { showStrokeLimitTips_maybe } from "src/notices/stroke-limit-notice";
 import { Notice } from "obsidian";
 import { debug, warn, info, error, http, verbose } from "./log-to-console";
+import { LinkGroupMap } from "./page-file";
 
 //////////
 //////////
@@ -594,13 +595,118 @@ export function lockShape(editor: Editor, shape: TLUnknownShape) {
 }
 
 export function getWritingContainerBounds(editor: Editor): Box {
-	const bounds = editor.getShapePageBounds('shape:writing-container' as TLShapeId)
-	
-	if(bounds) {
-		return bounds;
-	} else {
-		return new Box();
-	}
+        const bounds = editor.getShapePageBounds('shape:writing-container' as TLShapeId)
+
+        if(bounds) {
+                return bounds;
+        } else {
+                return new Box();
+        }
+}
+
+export type LinkGroupBoundingBox = {
+        groupId: string;
+        bounds: Box;
+        shapeIds: TLShapeId[];
+};
+
+export type LinkGroupBoundsResult = {
+        pageBounds: Box | null;
+        groups: LinkGroupBoundingBox[];
+};
+
+const LINK_GROUP_META_KEYS = ['linkGroupId', 'link_group', 'linkgroup'];
+
+export function getShapeLinkGroupId(shape: TLUnknownShape | undefined): string | undefined {
+        if (!shape) return undefined;
+        const shapeRecord = shape as unknown as { meta?: Record<string, unknown>; props?: Record<string, unknown> };
+        const meta = shapeRecord.meta;
+        if (!meta) return undefined;
+
+        for (const key of LINK_GROUP_META_KEYS) {
+                const value = meta[key];
+                if (typeof value === 'string' && value.length > 0) {
+                        return value;
+                }
+        }
+
+        const props = shapeRecord.props;
+        if (props) {
+                for (const key of LINK_GROUP_META_KEYS) {
+                        const value = props[key];
+                        if (typeof value === 'string' && value.length > 0) {
+                                return value;
+                        }
+                }
+        }
+
+        return undefined;
+}
+
+export function getLinkGroupBoundsFromSnapshot(snapshot: TLEditorSnapshot | undefined, linkGroups: LinkGroupMap | undefined): LinkGroupBoundsResult {
+        if (!snapshot || !linkGroups || Object.keys(linkGroups).length === 0) {
+                return { pageBounds: null, groups: [] };
+        }
+
+        if (typeof document === 'undefined') {
+                return { pageBounds: null, groups: [] };
+        }
+
+        const container = document.createElement('div');
+        const store = createTLStore();
+        loadSnapshot(store, snapshot as Partial<TLEditorSnapshot>);
+        const editor = new Editor({
+                store,
+                shapeUtils: defaultShapeUtils,
+                bindingUtils: defaultBindingUtils,
+                tools: defaultTools,
+                getContainer: () => container,
+                autoFocus: false,
+        });
+
+        try {
+                const pageBounds = editor.getCurrentPageBounds();
+                const result: LinkGroupBoundingBox[] = [];
+                const shapeIds = Array.from(editor.getCurrentPageShapeIds().values());
+
+                const boundsByGroup = new Map<string, { bounds: Box; shapeIds: TLShapeId[] }>();
+
+                for (const id of shapeIds) {
+                        const shape = editor.getShape(id);
+                        const groupId = getShapeLinkGroupId(shape);
+                        if (!groupId || !(groupId in linkGroups)) continue;
+
+                        const shapeBounds = editor.getShapePageBounds(id as TLShapeId);
+                        if (!shapeBounds) continue;
+
+                        const entry = boundsByGroup.get(groupId);
+                        if (entry) {
+                                entry.bounds.expand(shapeBounds);
+                                entry.shapeIds.push(id as TLShapeId);
+                        } else {
+                                boundsByGroup.set(groupId, {
+                                        bounds: new Box(shapeBounds.minX, shapeBounds.minY, shapeBounds.width, shapeBounds.height),
+                                        shapeIds: [id as TLShapeId],
+                                });
+                        }
+                }
+
+                boundsByGroup.forEach((value, groupId) => {
+                        result.push({
+                                groupId,
+                                bounds: value.bounds,
+                                shapeIds: value.shapeIds,
+                        });
+                });
+
+                return { pageBounds: pageBounds ?? null, groups: result };
+        } catch (err) {
+                warn(['Failed to calculate link group bounds', err]);
+                return { pageBounds: null, groups: [] };
+        } finally {
+                editor.dispose();
+                store.dispose();
+        }
 }
 
 

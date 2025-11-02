@@ -8,6 +8,7 @@ import { RedoIcon } from "src/graphics/icons/redo-icon";
 import { Editor } from "@tldraw/tldraw";
 import { Activity, getActivityType, silentlyChangeStore } from "src/utils/tldraw-helpers";
 import classNames from "classnames";
+import { LinkIcon } from "src/graphics/icons/link-icon";
 
 //////////
 //////////
@@ -20,6 +21,7 @@ export enum tool {
 interface WritingMenuProps {
     getTlEditor: () => Editor | undefined,
     onStoreChange: (elEditor: Editor) => void,
+    onToggleLinksPanel?: () => void,
 }
 
 export const WritingMenu = (props: WritingMenuProps) => {
@@ -116,7 +118,15 @@ export const WritingMenu = (props: WritingMenuProps) => {
             <div
                 className='ink_other-menu'
             >
-            
+                <button
+                    type="button"
+                    onPointerDown={(event) => {
+                        event.preventDefault();
+                        props.onToggleLinksPanel?.();
+                    }}
+                >
+                    <LinkIcon />
+                </button>
             </div>
         </div>
     </>;

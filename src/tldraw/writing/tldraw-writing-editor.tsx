@@ -1,7 +1,7 @@
 import './tldraw-writing-editor.scss';
 import { Box, Editor, HistoryEntry, StoreSnapshot, TLStoreSnapshot, TLRecord, TLShapeId, TLStore, TLUiOverrides, TLUnknownShape, Tldraw, getSnapshot, TLSerializedStore, TldrawOptions, TldrawEditor, defaultTools, defaultShapeTools, defaultShapeUtils, defaultBindingUtils, TldrawScribble, TldrawShapeIndicators, TldrawSelectionForeground, TldrawSelectionBackground, TldrawHandles, TLEditorSnapshot } from "@tldraw/tldraw";
 import { useRef } from "react";
-import { Activity, WritingCameraLimits, adaptTldrawToObsidianThemeMode, deleteObsoleteWritingTemplateShapes, focusChildTldrawEditor, getActivityType, getWritingContainerBounds, getWritingSvg, hideWritingContainer, hideWritingLines, hideWritingTemplate, initWritingCamera, initWritingCameraLimits, lockShape, prepareWritingSnapshot, preventTldrawCanvasesCausingObsidianGestures, resizeWritingTemplateInvitingly, restrictWritingCamera, silentlyChangeStore, unhideWritingContainer, unhideWritingLines, unhideWritingTemplate, unlockShape, updateWritingStoreIfNeeded, useStash } from "../../utils/tldraw-helpers";
+import { Activity, WritingCameraLimits, adaptTldrawToObsidianThemeMode, deleteObsoleteWritingTemplateShapes, focusChildTldrawEditor, getActivityType, getShapeLinkGroupId, getWritingContainerBounds, getWritingSvg, hideWritingContainer, hideWritingLines, hideWritingTemplate, initWritingCamera, initWritingCameraLimits, lockShape, prepareWritingSnapshot, preventTldrawCanvasesCausingObsidianGestures, resizeWritingTemplateInvitingly, restrictWritingCamera, silentlyChangeStore, unhideWritingContainer, unhideWritingLines, unhideWritingTemplate, unlockShape, updateWritingStoreIfNeeded, useStash } from "../../utils/tldraw-helpers";
 import { WritingContainer, WritingContainerUtil } from "../writing-shapes/writing-container"
 import { WritingMenu } from "../writing-menu/writing-menu";
 import InkPlugin from "../../main";
@@ -58,7 +58,7 @@ const tlOptions: Partial<TldrawOptions> = {
 
 export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 
-	const [tlEditorSnapshot, setTlEditorSnapshot] = React.useState<TLEditorSnapshot>()
+        const [tlEditorSnapshot, setTlEditorSnapshot] = React.useState<TLEditorSnapshot>()
         const setEmbedState = useSetAtom(embedStateAtom);
         const shortDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
         const longDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
@@ -69,10 +69,56 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
         const [preventTransitions, setPreventTransitions] = React.useState<boolean>(true);
         const linkGroupsRef = useRef<LinkGroupMap>({});
         const [, setLinkGroups] = React.useState<LinkGroupMap>({});
+        const [isLinkPanelOpen, setIsLinkPanelOpen] = React.useState<boolean>(false);
+        const [selectionGroups, setSelectionGroups] = React.useState<{ groupId: string; shapeIds: TLShapeId[] }[]>([]);
+
+        const updateSelectionSummary = React.useCallback(() => {
+                const editor = tlEditorRef.current;
+                if (!editor) {
+                        setSelectionGroups([]);
+                        return;
+                }
+
+                const selectedIds = editor.getSelectedShapeIds();
+                if (selectedIds.length === 0) {
+                        setSelectionGroups([]);
+                        return;
+                }
+
+                const grouped = new Map<string, TLShapeId[]>();
+                selectedIds.forEach((id) => {
+                        const shape = editor.getShape(id);
+                        const groupId = getShapeLinkGroupId(shape);
+                        if (!groupId) return;
+                        const existing = grouped.get(groupId) ?? [];
+                        existing.push(id as TLShapeId);
+                        grouped.set(groupId, existing);
+                });
+
+                setSelectionGroups(Array.from(grouped.entries()).map(([groupId, shapeIds]) => ({ groupId, shapeIds })));
+        }, []);
+
         const updateLinkGroups = React.useCallback((groups: LinkGroupMap) => {
                 linkGroupsRef.current = groups;
                 setLinkGroups(groups);
+                updateSelectionSummary();
+        }, [updateSelectionSummary]);
+
+        const toggleLinkPanel = React.useCallback(() => {
+                setIsLinkPanelOpen((prev) => !prev);
         }, []);
+
+        React.useEffect(() => {
+                const editor = tlEditorRef.current;
+                if (!editor) return;
+
+                updateSelectionSummary();
+                const remove = editor.store.listen(() => {
+                        updateSelectionSummary();
+                }, { scope: 'session' });
+
+                return () => remove();
+        }, [tlEditorSnapshot, updateSelectionSummary]);
 
 	// On mount
 	React.useEffect( ()=> {
@@ -346,15 +392,16 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 				autoFocus = {false}
 			/>
 
-			<PrimaryMenuBar>
-				<WritingMenu
-					getTlEditor = {getTlEditor}
-					onStoreChange = {(tlEditor: Editor) => queueOrRunStorePostProcesses(tlEditor)}
-				/>
-				{props.embedded && props.extendedMenu && (
-					<ExtendedWritingMenu
-						onLockClick = { async () => {
-							// REVIEW: Save immediately? incase it hasn't been saved yet
+                        <PrimaryMenuBar>
+                                <WritingMenu
+                                        getTlEditor = {getTlEditor}
+                                        onStoreChange = {(tlEditor: Editor) => queueOrRunStorePostProcesses(tlEditor)}
+                                        onToggleLinksPanel = {toggleLinkPanel}
+                                />
+                                {props.embedded && props.extendedMenu && (
+                                        <ExtendedWritingMenu
+                                                onLockClick = { async () => {
+                                                        // REVIEW: Save immediately? incase it hasn't been saved yet
 							if(props.closeEditor) props.closeEditor();
 						}}
 						menuOptions = {props.extendedMenu}
@@ -362,19 +409,96 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 				)}
 			</PrimaryMenuBar>
 
-			<SecondaryMenuBar>
-				<ModifyMenu
-					getTlEditor = {getTlEditor}
-					onStoreChange = {(tlEditor: Editor) => queueOrRunStorePostProcesses(tlEditor)}
-				/>
-			</SecondaryMenuBar>
-			
-		</div>
-	</>;
+                        <SecondaryMenuBar>
+                                <ModifyMenu
+                                        getTlEditor = {getTlEditor}
+                                        onStoreChange = {(tlEditor: Editor) => queueOrRunStorePostProcesses(tlEditor)}
+                                />
+                        </SecondaryMenuBar>
+
+                        <LinkGroupPanel
+                                isOpen = {isLinkPanelOpen}
+                                onClose = {() => setIsLinkPanelOpen(false)}
+                                linkGroups = {linkGroupsRef.current}
+                                selectionGroups = {selectionGroups}
+                                editor = {tlEditorRef.current}
+                        />
+
+                </div>
+        </>;
 
 
-	// Helper functions
-	///////////////////
+        // Helper functions
+        ///////////////////
+
+interface LinkGroupPanelProps {
+        isOpen: boolean;
+        onClose: () => void;
+        linkGroups: LinkGroupMap;
+        selectionGroups: { groupId: string; shapeIds: TLShapeId[] }[];
+        editor?: Editor;
+}
+
+function LinkGroupPanel({ isOpen, onClose, linkGroups, selectionGroups, editor }: LinkGroupPanelProps) {
+        if (!isOpen) return <></>;
+
+        return (
+                <div className="ddc_ink_link-panel">
+                        <div className="ddc_ink_link-panel__header">
+                                <span>Links</span>
+                                <button type="button" onClick={onClose} aria-label="Close link panel">
+                                        ×
+                                </button>
+                        </div>
+                        <div className="ddc_ink_link-panel__content">
+                                {selectionGroups.length === 0 && (
+                                        <p className="ddc_ink_link-panel__empty">Select a linked shape to view details.</p>
+                                )}
+
+                                {selectionGroups.map(({ groupId, shapeIds }) => {
+                                        const group = linkGroups[groupId];
+                                        if (!group) return null;
+
+                                        const bounds = editor ? getBoundsForShapes(editor, shapeIds) : null;
+                                        return (
+                                                <div className="ddc_ink_link-panel__item" key={groupId}>
+                                                        <div className="ddc_ink_link-panel__item-header">
+                                                                <span className="ddc_ink_link-panel__item-label">{group.target}</span>
+                                                                <span className="ddc_ink_link-panel__item-count">{shapeIds.length} shapes</span>
+                                                        </div>
+                                                        {bounds && (
+                                                                <div className="ddc_ink_link-panel__item-bounds">
+                                                                        Bounds: {Math.round(bounds.width)}×{Math.round(bounds.height)} px
+                                                                </div>
+                                                        )}
+                                                        {group.meta && (
+                                                                <pre className="ddc_ink_link-panel__item-meta">{JSON.stringify(group.meta, null, 2)}</pre>
+                                                        )}
+                                                        <div className="ddc_ink_link-panel__item-actions">
+                                                                <button type="button" disabled>Edit</button>
+                                                                <button type="button" disabled>Remove</button>
+                                                        </div>
+                                                </div>
+                                        );
+                                })}
+                        </div>
+                </div>
+        );
+}
+
+function getBoundsForShapes(editor: Editor, shapeIds: TLShapeId[]): Box | null {
+        let combined: Box | null = null;
+        shapeIds.forEach((shapeId) => {
+                const bounds = editor.getShapePageBounds(shapeId);
+                if (!bounds) return;
+                if (!combined) {
+                        combined = new Box(bounds.minX, bounds.minY, bounds.width, bounds.height);
+                } else {
+                        combined.expand(bounds);
+                }
+        });
+        return combined;
+}
 
     async function fetchFileData() {
         const { pageData, didBackfill } = await getInkFileData(props.plugin, props.writingFile)

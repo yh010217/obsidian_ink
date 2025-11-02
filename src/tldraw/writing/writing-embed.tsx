@@ -1,9 +1,9 @@
 import "./writing-embed.scss";
 import * as React from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TldrawWritingEditorWrapper } from "./tldraw-writing-editor";
 import InkPlugin from "../../main";
-import { InkFileData } from "../../utils/page-file";
+import { InkFileData, LinkGroup } from "../../utils/page-file";
 import { TFile } from "obsidian";
 import { duplicateWritingFile, rememberDrawingFile, rememberWritingFile } from "src/utils/rememberDrawingFile";
 import { isEmptyWritingFile } from "src/utils/tldraw-helpers";
@@ -60,7 +60,28 @@ export function WritingEmbed (props: {
 	// const activeEmbedId = useSelector((state: GlobalSessionState) => state.activeEmbedId);
 	// const dispatch = useDispatch();
 
-	const setEmbedState = useSetAtom(embedStateAtom);
+        const setEmbedState = useSetAtom(embedStateAtom);
+        const [linkMenuState, setLinkMenuState] = useState<null | {
+                groupId: string;
+                link: LinkGroup;
+                anchor: DOMRect;
+        }>(null);
+
+        useEffect(() => {
+                if (!linkMenuState) return;
+
+                const handleClick = (event: MouseEvent) => {
+                        if (!(event.target instanceof Node)) return;
+                        if (embedContainerElRef.current && embedContainerElRef.current.contains(event.target)) {
+                                return;
+                        }
+                        setLinkMenuState(null);
+                };
+
+                const options: AddEventListenerOptions = { capture: true };
+                document.addEventListener('mousedown', handleClick, options);
+                return () => document.removeEventListener('mousedown', handleClick, options);
+        }, [linkMenuState]);
 	
 	// On first mount
 	React.useEffect( () => {
@@ -127,19 +148,22 @@ export function WritingEmbed (props: {
 				ref = {resizeContainerElRef}
 			>
 			
-				<WritingEmbedPreviewWrapper
-					plugin = {props.plugin}
-					onResize = {(height: number) => resizeContainer(height)}
-					writingFile = {props.writingFileRef}
-					onClick = {async (event) => {
-						// dispatch({ type: 'global-session/setActiveEmbedId', payload: embedId })
-						// setPageData( await refreshPageData(props.plugin, props.fileRef) );
-						switchToEditMode();
-					}}
-				/>
+                                <WritingEmbedPreviewWrapper
+                                        plugin = {props.plugin}
+                                        onResize = {(height: number) => resizeContainer(height)}
+                                        writingFile = {props.writingFileRef}
+                                        onClick = {async (event) => {
+                                                // dispatch({ type: 'global-session/setActiveEmbedId', payload: embedId })
+                                                // setPageData( await refreshPageData(props.plugin, props.fileRef) );
+                                                switchToEditMode();
+                                        }}
+                                        onLinkGroupClick={(payload) => {
+                                                setLinkMenuState(payload);
+                                        }}
+                                />
 
-				<TldrawWritingEditorWrapper
-					plugin = {props.plugin} // TODO: Try and remove this
+                                <TldrawWritingEditorWrapper
+                                        plugin = {props.plugin} // TODO: Try and remove this
 					onResize = {(height: number) => resizeContainer(height)}
 					writingFile = {props.writingFileRef}
 					save = {props.save}
@@ -147,12 +171,39 @@ export function WritingEmbed (props: {
 					saveControlsReference = {registerEditorControls}
 					closeEditor = {saveAndSwitchToPreviewMode}
 					extendedMenu = {commonExtendedOptions}
-				/>
+                                />
 
-			</div>
+                        </div>
 
-		</div>
-	</>;
+                        {linkMenuState && (
+                                <div
+                                        className="ddc_ink_link-menu"
+                                        style={getLinkMenuPosition(linkMenuState.anchor)}
+                                >
+                                        <div className="ddc_ink_link-menu__header">Linked content</div>
+                                        <div className="ddc_ink_link-menu__body">
+                                                <div className="ddc_ink_link-menu__target" title={linkMenuState.link.target}>
+                                                        {linkMenuState.link.target}
+                                                </div>
+                                                {linkMenuState.link?.meta && (
+                                                        <pre className="ddc_ink_link-menu__meta">
+                                                                {JSON.stringify(linkMenuState.link.meta, null, 2)}
+                                                        </pre>
+                                                )}
+                                                <div className="ddc_ink_link-menu__actions">
+                                                        <button type="button" disabled>
+                                                                Edit
+                                                        </button>
+                                                        <button type="button" disabled>
+                                                                Remove
+                                                        </button>
+                                                </div>
+                                        </div>
+                                </div>
+                        )}
+
+                </div>
+        </>;
 	
 	// Helper functions
 	///////////////////
@@ -161,20 +212,21 @@ export function WritingEmbed (props: {
 		editorControlsRef.current = handlers;
 	}
 
-	function resizeContainer(height: number) {
-		if(!resizeContainerElRef.current) return;
-		resizeContainerElRef.current.style.height = height + 'px';
-		setTimeout( () => {
-			// Applies after slight delay so it doesn't affect the first resize
+        function resizeContainer(height: number) {
+                if(!resizeContainerElRef.current) return;
+                resizeContainerElRef.current.style.height = height + 'px';
+                setTimeout( () => {
+                        // Applies after slight delay so it doesn't affect the first resize
 			if(!resizeContainerElRef.current) return;
 			resizeContainerElRef.current.classList.add('ddc_ink_smooth-transition');
 		}, 100)
 	}
 
-	function switchToEditMode() {
-		verbose('Set WritingEmbedState: loadingEditor')
-		setEmbedState(WritingEmbedState.loadingEditor);
-	}
+        function switchToEditMode() {
+                verbose('Set WritingEmbedState: loadingEditor')
+                setLinkMenuState(null);
+                setEmbedState(WritingEmbedState.loadingEditor);
+        }
 	
 	async function saveAndSwitchToPreviewMode() {
 		verbose('Set WritingEmbedState: loadingPreview');
@@ -183,8 +235,29 @@ export function WritingEmbed (props: {
 			await editorControlsRef.current.saveAndHalt();
 		}
 
-		setEmbedState(WritingEmbedState.loadingPreview);
-	}
+                setEmbedState(WritingEmbedState.loadingPreview);
+        }
+
+        function getLinkMenuPosition(anchor: DOMRect) {
+                const containerRect = embedContainerElRef.current?.getBoundingClientRect();
+                if(!containerRect) {
+                        return {
+                                position: 'absolute' as const,
+                                left: anchor.left,
+                                top: anchor.bottom + window.scrollY,
+                        };
+                }
+
+                const offsetTop = resizeContainerElRef.current?.offsetTop ?? 0;
+                const top = anchor.bottom - containerRect.top + offsetTop;
+                const left = anchor.left - containerRect.left;
+
+                return {
+                        position: 'absolute' as const,
+                        left,
+                        top,
+                };
+        }
 	
 };
 
