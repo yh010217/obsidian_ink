@@ -2,7 +2,7 @@
 import { EditorPosition, MarkdownPostProcessorContext, MarkdownRenderChild, TFile } from "obsidian";
 import * as React from "react";
 import { Root, createRoot } from "react-dom/client";
-import { InkFileData, stringifyPageData } from "src/utils/page-file";
+import { InkFileData, backfillLinkGroupsIfMissing, stringifyPageData } from "src/utils/page-file";
 import { DrawingEmbedData, applyCommonAncestorStyling, rebuildDrawingEmbed, removeEmbed, stringifyEmbedData } from "src/utils/embed";
 import InkPlugin from "src/main";
 import DrawingEmbed from "src/tldraw/drawing/drawing-embed";
@@ -106,7 +106,7 @@ class DrawingEmbedWidget extends MarkdownRenderChild {
 		}
 
 		const pageDataStr = await v.read(this.fileRef);
-		const pageData = JSON.parse(pageDataStr) as InkFileData;
+                const { pageData } = backfillLinkGroupsIfMissing(JSON.parse(pageDataStr) as InkFileData);
 
 		this.root = createRoot(this.el);
 		this.root.render(

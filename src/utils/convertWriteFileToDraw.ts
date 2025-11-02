@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import { DRAW_FILE_EXT, WRITE_FILE_EXT } from "src/constants";
 import InkPlugin from "src/main";
-import { InkFileData } from "./page-file";
+import { InkFileData, backfillLinkGroupsIfMissing } from "./page-file";
 import { TLEditorSnapshot, TLShapeId, TLStoreSnapshot } from "@tldraw/tldraw";
 
 
@@ -10,7 +10,7 @@ export const convertWriteFileToDraw = async (plugin: InkPlugin, file: TFile) => 
     const v = plugin.app.vault;
 
     const pageDataStr = await v.read(file);
-    const pageData = JSON.parse(pageDataStr) as InkFileData;
+    const { pageData } = backfillLinkGroupsIfMissing(JSON.parse(pageDataStr) as InkFileData);
 
     // Remove the page container from the file
     if ('store' in pageData.tldraw) {

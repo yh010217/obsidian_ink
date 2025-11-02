@@ -7,7 +7,7 @@ import InkPlugin from "src/main";
 import { TldrawWritingEditor } from "src/tldraw/writing/tldraw-writing-editor";
 import { convertWriteFileToDraw } from "src/utils/convertWriteFileToDraw";
 import { openInkFile } from "src/utils/open-file";
-import { InkFileData, stringifyPageData } from "src/utils/page-file";
+import { InkFileData, backfillLinkGroupsIfMissing, stringifyPageData } from "src/utils/page-file";
 
 ////////
 ////////
@@ -49,7 +49,7 @@ export class WritingView extends TextFileView {
     setViewData = (fileContents: string, clear: boolean) => {
         if(!this.file) return;
         
-        const pageData = JSON.parse(fileContents) as InkFileData;
+        const { pageData } = backfillLinkGroupsIfMissing(JSON.parse(fileContents) as InkFileData);
         this.pageData = pageData;
 
         const viewContent = this.containerEl.children[1];

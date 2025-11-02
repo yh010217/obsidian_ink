@@ -110,8 +110,8 @@ const WritingEmbedPreview: React.FC<WritingEmbedPreviewProps> = (props) => {
     }
 
     async function fetchFileData() {
-        const inkFileData = await getInkFileData(props.plugin, props.writingFile)
-        if (inkFileData.previewUri) setFileSrc(inkFileData.previewUri)
+        const { pageData } = await getInkFileData(props.plugin, props.writingFile)
+        if (pageData.previewUri) setFileSrc(pageData.previewUri)
     }
 
     function recalcHeight() {

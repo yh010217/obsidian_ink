@@ -3,7 +3,7 @@ import * as React from "react";
 import { useRef, useState } from "react";
 import { TldrawDrawingEditor, TldrawDrawingEditorWrapper } from "./tldraw-drawing-editor";
 import InkPlugin from "../../main";
-import { InkFileData } from "../../utils/page-file";
+import { InkFileData, backfillLinkGroupsIfMissing } from "../../utils/page-file";
 import { TFile } from "obsidian";
 import { rememberDrawingFile } from "src/utils/rememberDrawingFile";
 import { GlobalSessionState } from "src/logic/stores";
@@ -244,6 +244,6 @@ export default DrawingEmbed;
 async function refreshPageData(plugin: InkPlugin, file: TFile): Promise<InkFileData> {
 	const v = plugin.app.vault;
 	const pageDataStr = await v.read(file);
-	const pageData = JSON.parse(pageDataStr) as InkFileData;
-	return pageData;
+    const { pageData } = backfillLinkGroupsIfMissing(JSON.parse(pageDataStr) as InkFileData);
+    return pageData;
 }

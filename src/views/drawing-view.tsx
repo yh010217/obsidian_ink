@@ -4,7 +4,7 @@ import { Root, createRoot } from "react-dom/client";
 import { DRAW_FILE_EXT } from "src/constants";
 import InkPlugin from "src/main";
 import { TldrawDrawingEditor, TldrawDrawingEditorWrapper } from "src/tldraw/drawing/tldraw-drawing-editor";
-import { InkFileData, stringifyPageData } from "src/utils/page-file";
+import { InkFileData, backfillLinkGroupsIfMissing, stringifyPageData } from "src/utils/page-file";
 import { 
 	Provider as JotaiProvider
 } from "jotai";
@@ -58,7 +58,7 @@ export class DrawingView extends TextFileView {
     setViewData = (fileContents: string, clear: boolean) => {
         if(!this.file) return;
         
-        const pageData = JSON.parse(fileContents) as InkFileData;
+        const { pageData } = backfillLinkGroupsIfMissing(JSON.parse(fileContents) as InkFileData);
         this.pageData = pageData;
 
         const viewContent = this.containerEl.children[1];
