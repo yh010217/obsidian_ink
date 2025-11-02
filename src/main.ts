@@ -25,7 +25,8 @@ import { drawExistingSvgStr, drawPasteSvgStr } from './graphics/icons/command-ic
 ////////
 
 export default class InkPlugin extends Plugin {
-	settings: PluginSettings;
+        settings: PluginSettings;
+        private linkableInkModeActive = false;
 
 	async onload() {
 		await this.loadSettings();
@@ -76,42 +77,79 @@ export default class InkPlugin extends Plugin {
 	
 	onunload() {}
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
+        async loadSettings() {
+                this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+                if(!this.settings.linkableInkEnabled) {
+                        this.linkableInkModeActive = false;
+                }
+        }
 
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+        async saveSettings() {
+                await this.saveData(this.settings);
+        }
 
-	async resetSettings() {
-		this.settings = JSON.parse( JSON.stringify(DEFAULT_SETTINGS) );
-		this.saveSettings();
-		new Notice('Ink plugin settings reset');
-	}
+        async resetSettings() {
+                this.settings = JSON.parse( JSON.stringify(DEFAULT_SETTINGS) );
+                this.linkableInkModeActive = false;
+                this.saveSettings();
+                new Notice('Ink plugin settings reset');
+        }
+
+        isLinkableInkModeActive(): boolean {
+                return this.settings.linkableInkEnabled && this.linkableInkModeActive;
+        }
+
+        setLinkableInkMode(active: boolean): void {
+                this.linkableInkModeActive = active && this.settings.linkableInkEnabled;
+        }
+
+        toggleLinkableInkMode(): boolean {
+                if(!this.settings.linkableInkEnabled) {
+                        this.linkableInkModeActive = false;
+                        return false;
+                }
+
+                this.linkableInkModeActive = !this.linkableInkModeActive;
+                return this.linkableInkModeActive;
+        }
 }
 
 export const inkPluginAtom = atom<InkPlugin>();
 
 function implementWritingEmbedActions(plugin: InkPlugin) {
-	plugin.addCommand({
-		id: 'create-handwritten-section',
-		name: 'New handwriting section',
-		icon: 'write_default',
-		editorCallback: (editor: Editor) => insertNewWritingFile(plugin, editor)
-	});
-	plugin.addCommand({
-		id: 'embed-writing-file',
-		name: 'Existing handwriting section',
-		icon: 'write_existing',
-		editorCallback: (editor: Editor) => insertExistingWritingFile(plugin, editor)
-	});
-	plugin.addCommand({
-		id: 'insert-copied-writing',
-		name: 'Copied handwriting section',
-		icon: 'write_paste',
-		editorCallback: (editor: Editor) => insertRememberedWritingFile(plugin, editor)
-	});
+        plugin.addCommand({
+                id: 'create-handwritten-section',
+                name: 'New handwriting section',
+                icon: 'write_default',
+                editorCallback: (editor: Editor) => insertNewWritingFile(plugin, editor)
+        });
+        plugin.addCommand({
+                id: 'embed-writing-file',
+                name: 'Existing handwriting section',
+                icon: 'write_existing',
+                editorCallback: (editor: Editor) => insertExistingWritingFile(plugin, editor)
+        });
+        plugin.addCommand({
+                id: 'insert-copied-writing',
+                name: 'Copied handwriting section',
+                icon: 'write_paste',
+                editorCallback: (editor: Editor) => insertRememberedWritingFile(plugin, editor)
+        });
+
+        plugin.addCommand({
+                id: 'toggle-linkable-ink-mode',
+                name: 'Toggle linkable Ink mode',
+                callback: () => {
+                        if(!plugin.settings.linkableInkEnabled) {
+                                plugin.setLinkableInkMode(false);
+                                new Notice('Enable linkable Ink mode in the settings first.');
+                                return;
+                        }
+
+                        const enabled = plugin.toggleLinkableInkMode();
+                        new Notice(enabled ? 'Linkable Ink mode enabled' : 'Linkable Ink mode disabled');
+                },
+        });
 }
 
 function implementDrawingEmbedActions(plugin: InkPlugin) {

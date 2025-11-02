@@ -21,6 +21,8 @@ import { getInkFileData } from 'src/utils/getInkFileData';
 import { verbose } from 'src/utils/log-to-console';
 import { SecondaryMenuBar } from '../secondary-menu-bar/secondary-menu-bar';
 import ModifyMenu from '../modify-menu/modify-menu';
+import { nanoid } from 'nanoid';
+import { computeLinkableInkTarget } from 'src/utils/linkable-ink';
 
 ///////
 ///////
@@ -104,6 +106,24 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
                 updateSelectionSummary();
         }, [updateSelectionSummary]);
 
+        const refreshLinkHighlights = React.useCallback((editor: Editor) => {
+                const pageShapeIds = Array.from(editor.getCurrentPageShapeIds().values());
+                const nextGroups: LinkGroupMap = {};
+
+                pageShapeIds.forEach((shapeId) => {
+                        const shape = editor.getShape(shapeId);
+                        const groupId = getShapeLinkGroupId(shape);
+                        if (!groupId) return;
+
+                        const existing = linkGroupsRef.current[groupId];
+                        if (existing) {
+                                nextGroups[groupId] = existing;
+                        }
+                });
+
+                updateLinkGroups({ ...nextGroups });
+        }, [updateLinkGroups]);
+
         const toggleLinkPanel = React.useCallback(() => {
                 setIsLinkPanelOpen((prev) => !prev);
         }, []);
@@ -119,6 +139,66 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 
                 return () => remove();
         }, [tlEditorSnapshot, updateSelectionSummary]);
+
+        const applyLinkableInkToCompletedShapes = React.useCallback((entry: HistoryEntry<TLRecord>, editor: Editor) => {
+                if (!props.plugin.isLinkableInkModeActive()) {
+                        return;
+                }
+
+                const completedShapeIds = getCompletedDrawShapeIds(entry);
+                if (completedShapeIds.length === 0) {
+                        return;
+                }
+
+                const link = computeLinkableInkTarget(props.plugin, props.plugin.settings.linkableInkDefaultRules);
+                if (!link) {
+                        return;
+                }
+
+                const newEntries: LinkGroupMap = {};
+
+                completedShapeIds.forEach((shapeId) => {
+                        const shape = editor.getShape(shapeId);
+                        if (!shape) {
+                                return;
+                        }
+
+                        const existingGroupId = getShapeLinkGroupId(shape);
+                        if (existingGroupId) {
+                                return;
+                        }
+
+                        const groupId = nanoid();
+
+                        editor.updateShape({
+                                id: shape.id as TLShapeId,
+                                type: shape.type,
+                                meta: {
+                                        ...(shape.meta ?? {}),
+                                        link_group: groupId,
+                                        link_target: link.target,
+                                },
+                        } as unknown as TLUnknownShape);
+
+                        const meta = link.meta ? { ...link.meta, shapeId, groupId } : { shapeId, groupId };
+                        newEntries[groupId] = {
+                                target: link.target,
+                                meta,
+                        };
+                });
+
+                if (Object.keys(newEntries).length === 0) {
+                        return;
+                }
+
+                const nextGroups: LinkGroupMap = {
+                        ...linkGroupsRef.current,
+                        ...newEntries,
+                };
+
+                updateLinkGroups(nextGroups);
+                refreshLinkHighlights(editor);
+        }, [props.plugin, refreshLinkHighlights, updateLinkGroups]);
 
 	// On mount
 	React.useEffect( ()=> {
@@ -192,16 +272,17 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 					stashStaleContent(editor);
 					break;
 					
-				case Activity.DrawingContinued:
-					resetInputPostProcessTimers();
-					break;
-							
-				case Activity.DrawingCompleted:
-					queueOrRunStorePostProcesses(editor);
-					break;
-					
-				case Activity.DrawingErased:
-					queueOrRunStorePostProcesses(editor);
+                                case Activity.DrawingContinued:
+                                        resetInputPostProcessTimers();
+                                        break;
+
+                                case Activity.DrawingCompleted:
+                                        applyLinkableInkToCompletedShapes(entry, editor);
+                                        queueOrRunStorePostProcesses(editor);
+                                        break;
+
+                                case Activity.DrawingErased:
+                                        queueOrRunStorePostProcesses(editor);
 					break;
 					
 				default:
@@ -259,11 +340,12 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 
 	}
 
-	const queueOrRunStorePostProcesses = (editor: Editor) => {
-		instantInputPostProcess(editor);
-		smallDelayInputPostProcess(editor);
-		longDelayInputPostProcess(editor);
-	}
+        const queueOrRunStorePostProcesses = (editor: Editor) => {
+                instantInputPostProcess(editor);
+                smallDelayInputPostProcess(editor);
+                longDelayInputPostProcess(editor);
+                refreshLinkHighlights(editor);
+        }
 
 	// Use this to run optimisations that that are quick and need to occur immediately on lifting the stylus
 	const instantInputPostProcess = (editor: Editor) => { //, entry?: HistoryEntry<TLRecord>) => {
@@ -363,9 +445,9 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 
 	//////////////
 
-	return <>
-		<div
-			ref = {editorWrapperRefEl}
+        return <> 
+                <div
+                        ref = {editorWrapperRefEl}
 			className = {classNames([
 				"ddc_ink_writing-editor",
 			])}
@@ -430,6 +512,40 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 
         // Helper functions
         ///////////////////
+
+function getCompletedDrawShapeIds(entry: HistoryEntry<TLRecord>): TLShapeId[] {
+        const completed = new Set<TLShapeId>();
+
+        const addedRecords = Object.values(entry.changes.added ?? {});
+        addedRecords.forEach((record) => {
+                if (record.typeName !== 'shape' || record.type !== 'draw') {
+                        return;
+                }
+
+                const props = (record as unknown as { props?: Record<string, unknown> }).props;
+                if (props && props['isComplete']) {
+                        completed.add(record.id as TLShapeId);
+                }
+        });
+
+        const updatedRecords = Object.values(entry.changes.updated ?? {});
+        updatedRecords.forEach(([previous, next]) => {
+                if (next.typeName !== 'shape' || next.type !== 'draw') {
+                        return;
+                }
+
+                const prevProps = (previous as unknown as { props?: Record<string, unknown> }).props;
+                const nextProps = (next as unknown as { props?: Record<string, unknown> }).props;
+                const wasComplete = Boolean(prevProps && prevProps['isComplete']);
+                const isComplete = Boolean(nextProps && nextProps['isComplete']);
+
+                if (!wasComplete && isComplete) {
+                        completed.add(next.id as TLShapeId);
+                }
+        });
+
+        return Array.from(completed.values());
+}
 
 interface LinkGroupPanelProps {
         isOpen: boolean;

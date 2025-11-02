@@ -342,22 +342,38 @@ function insertWritingSettings(containerEl: HTMLElement, plugin: InkPlugin, refr
 			})
 		});
 
-	new Setting(sectionEl)
-		.setClass('ddc_ink_setting')
-		.setName('Show background when not editing')
+        new Setting(sectionEl)
+                .setClass('ddc_ink_setting')
+                .setName('Show background when not editing')
 
-		.addToggle((toggle) => {
-			toggle.setValue(plugin.settings.writingBackgroundWhenLocked);
-			toggle.onChange( async (value: boolean) => {
-				plugin.settings.writingBackgroundWhenLocked = value;
-				await plugin.saveSettings();
-				refresh();
-			})
-		});
-	
-	new Setting(sectionEl)
-		.setClass('ddc_ink_setting')
-		.setName('Writing stroke limit')
+                .addToggle((toggle) => {
+                        toggle.setValue(plugin.settings.writingBackgroundWhenLocked);
+                        toggle.onChange( async (value: boolean) => {
+                                plugin.settings.writingBackgroundWhenLocked = value;
+                                await plugin.saveSettings();
+                                refresh();
+                        })
+                });
+
+        new Setting(sectionEl)
+                .setClass('ddc_ink_setting')
+                .setName('Enable linkable Ink mode')
+                .setDesc('Allow handwriting strokes to capture contextual links when link mode is toggled on.')
+                .addToggle((toggle) => {
+                        toggle.setValue(plugin.settings.linkableInkEnabled);
+                        toggle.onChange( async (value: boolean) => {
+                                plugin.settings.linkableInkEnabled = value;
+                                if (!value) {
+                                        plugin.setLinkableInkMode(false);
+                                }
+                                await plugin.saveSettings();
+                                refresh();
+                        })
+                });
+
+        new Setting(sectionEl)
+                .setClass('ddc_ink_setting')
+                .setName('Writing stroke limit')
 		.setDesc(`Too much writing in one embed can create a lag between your physical pen movement and the line appearing on screen. The stroke limit defines the maximum pen strokes before old strokes start becoming invisible until the embed is locked. Set this to a lower number if you're experiencing lag or jagged writing.`)
 
 		.addText((textItem) => {
