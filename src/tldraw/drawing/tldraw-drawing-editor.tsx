@@ -8,7 +8,7 @@ import { svgToPngDataUri } from 'src/utils/screenshots';
 import { TFile } from 'obsidian';
 import { savePngExport } from "src/utils/savePngExport";
 import { duplicateWritingFile, rememberDrawingFile } from "src/utils/rememberDrawingFile";
-import { InkFileData, buildDrawingFileData } from 'src/utils/page-file';
+import { InkFileData, LinkGroupMap, buildDrawingFileData } from 'src/utils/page-file';
 import { DRAW_SHORT_DELAY_MS, DRAW_LONG_DELAY_MS, DRAWING_INITIAL_ASPECT_RATIO } from 'src/constants';
 import { PrimaryMenuBar } from '../primary-menu-bar/primary-menu-bar';
 import DrawingMenu from '../drawing-menu/drawing-menu';
@@ -63,7 +63,8 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 	const setEmbedState = useSetAtom(embedStateAtom);
 	const shortDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
 	const longDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
-	const tlEditorRef = useRef<Editor>();
+        const tlEditorRef = useRef<Editor>();
+        const linkGroupsRef = useRef<LinkGroupMap>({});
 	const editorWrapperRefEl = useRef<HTMLDivElement>(null);
 	
 	// On mount
@@ -183,9 +184,10 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 	///////////////////
 
     async function fetchFileData() {
-        const inkFileData = await getInkFileData(props.plugin, props.drawingFile)
-        if(inkFileData.tldraw) {
-            const snapshot = prepareDrawingSnapshot(inkFileData.tldraw as TLEditorSnapshot);
+        const { pageData } = await getInkFileData(props.plugin, props.drawingFile)
+        linkGroupsRef.current = pageData.linkGroups ?? {};
+        if(pageData.tldraw) {
+            const snapshot = prepareDrawingSnapshot(pageData.tldraw as TLEditorSnapshot);
             setTlEditorSnapshot(snapshot);
         }
     }
@@ -245,10 +247,11 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 	const incrementalSave = async (editor: Editor) => {
 		verbose('incrementalSave');
 		const tlEditorSnapshot = getSnapshot(editor.store);
-		const pageData = buildDrawingFileData({
-			tlEditorSnapshot: tlEditorSnapshot,
-			previewIsOutdated: true,
-		})
+                const pageData = buildDrawingFileData({
+                        tlEditorSnapshot: tlEditorSnapshot,
+                        previewIsOutdated: true,
+                        linkGroups: linkGroupsRef.current,
+                })
 		props.save(pageData);
 	}
 
@@ -265,17 +268,19 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 		}
 		
 		if(previewUri) {
-			const pageData = buildDrawingFileData({
-				tlEditorSnapshot,
-				previewUri,
-			})
+                        const pageData = buildDrawingFileData({
+                                tlEditorSnapshot,
+                                previewUri,
+                                linkGroups: linkGroupsRef.current,
+                        })
 			props.save(pageData);
 			// savePngExport(props.plugin, previewUri, props.fileRef)
 
 		} else {
-			const pageData = buildDrawingFileData({
-				tlEditorSnapshot: tlEditorSnapshot,
-			})
+                        const pageData = buildDrawingFileData({
+                                tlEditorSnapshot: tlEditorSnapshot,
+                                linkGroups: linkGroupsRef.current,
+                        })
 			props.save(pageData);
 		}
 

@@ -2,7 +2,7 @@
 import { MarkdownRenderChild, MarkdownView, TFile } from "obsidian";
 import * as React from "react";
 import { Root, createRoot } from "react-dom/client";
-import { InkFileData, stringifyPageData } from "src/utils/page-file";
+import { InkFileData, backfillLinkGroupsIfMissing, stringifyPageData } from "src/utils/page-file";
 import { WritingEmbedData as WritingEmbedData, applyCommonAncestorStyling, removeEmbed } from "src/utils/embed";
 import InkPlugin from "src/main";
 import WritingEmbed from "src/tldraw/writing/writing-embed";
@@ -66,7 +66,7 @@ class WritingEmbedWidget extends MarkdownRenderChild {
 		}
 
 		const pageDataStr = await v.read(this.fileRef);
-		const pageData = JSON.parse(pageDataStr) as InkFileData;
+                const { pageData } = backfillLinkGroupsIfMissing(JSON.parse(pageDataStr) as InkFileData);
 
 		if(!this.root) this.root = createRoot(this.el);
 		this.root.render(

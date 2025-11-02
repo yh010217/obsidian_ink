@@ -113,8 +113,8 @@ export const DrawingEmbedPreview: React.FC<DrawingEmbedPreviewProps> = (props) =
     }
 
     async function fetchFileData() {
-        const inkFileData = await getInkFileData(props.plugin, props.drawingFile)
-        if (inkFileData.previewUri) setFileSrc(inkFileData.previewUri)
+        const { pageData } = await getInkFileData(props.plugin, props.drawingFile)
+        if (pageData.previewUri) setFileSrc(pageData.previewUri)
     }
 
 };

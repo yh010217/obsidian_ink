@@ -16,7 +16,6 @@ import { nanoid } from "nanoid";
 import { embedShouldActivateImmediately } from "src/utils/storage";
 import classNames from "classnames";
 import { atom, useSetAtom } from "jotai";
-import { getInkFileData } from "src/utils/getInkFileData";
 import { verbose } from "src/utils/log-to-console";
 
 ///////

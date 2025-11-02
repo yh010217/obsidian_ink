@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import { WRITE_FILE_EXT } from "src/constants";
 import InkPlugin from "src/main";
-import { InkFileData } from "./page-file";
+import { InkFileData, backfillLinkGroupsIfMissing } from "./page-file";
 
 
 export const needsTranscriptUpdate = (pageData: InkFileData): boolean => {
@@ -19,7 +19,7 @@ export const saveWriteFileTranscript = async (plugin: InkPlugin, fileRef: TFile,
 
     // console.log('saving transcript to', fileRef.path);
     const pageDataStr = await v.read(fileRef as TFile);
-    const pageData = JSON.parse(pageDataStr) as InkFileData;
+    const { pageData } = backfillLinkGroupsIfMissing(JSON.parse(pageDataStr) as InkFileData);
 
     // TODO: Add in a date of the transcript
     pageData.meta.transcript = "The new transcript";

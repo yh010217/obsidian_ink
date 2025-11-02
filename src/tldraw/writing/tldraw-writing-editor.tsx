@@ -7,7 +7,7 @@ import { WritingMenu } from "../writing-menu/writing-menu";
 import InkPlugin from "../../main";
 import * as React from "react";
 import { MENUBAR_HEIGHT_PX, WRITE_LONG_DELAY_MS, WRITE_SHORT_DELAY_MS, WRITING_LINE_HEIGHT, WRITING_MIN_PAGE_HEIGHT, WRITING_PAGE_WIDTH } from 'src/constants';
-import { InkFileData, buildWritingFileData } from 'src/utils/page-file';
+import { InkFileData, LinkGroupMap, buildWritingFileData } from 'src/utils/page-file';
 import { TFile } from 'obsidian';
 import { PrimaryMenuBar } from '../primary-menu-bar/primary-menu-bar';
 import ExtendedWritingMenu from '../extended-writing-menu/extended-writing-menu';
@@ -59,14 +59,20 @@ const tlOptions: Partial<TldrawOptions> = {
 export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 
 	const [tlEditorSnapshot, setTlEditorSnapshot] = React.useState<TLEditorSnapshot>()
-	const setEmbedState = useSetAtom(embedStateAtom);
-	const shortDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
-	const longDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
-	const tlEditorRef = useRef<Editor>();
-	const editorWrapperRefEl = useRef<HTMLDivElement>(null);
-	const { stashStaleContent, unstashStaleContent } = useStash(props.plugin);
-	const cameraLimitsRef = useRef<WritingCameraLimits>();
-	const [preventTransitions, setPreventTransitions] = React.useState<boolean>(true);
+        const setEmbedState = useSetAtom(embedStateAtom);
+        const shortDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
+        const longDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
+        const tlEditorRef = useRef<Editor>();
+        const editorWrapperRefEl = useRef<HTMLDivElement>(null);
+        const { stashStaleContent, unstashStaleContent } = useStash(props.plugin);
+        const cameraLimitsRef = useRef<WritingCameraLimits>();
+        const [preventTransitions, setPreventTransitions] = React.useState<boolean>(true);
+        const linkGroupsRef = useRef<LinkGroupMap>({});
+        const [, setLinkGroups] = React.useState<LinkGroupMap>({});
+        const updateLinkGroups = React.useCallback((groups: LinkGroupMap) => {
+                linkGroupsRef.current = groups;
+                setLinkGroups(groups);
+        }, []);
 
 	// On mount
 	React.useEffect( ()=> {
@@ -263,12 +269,13 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 		const tlEditorSnapshot = getSnapshot(editor.store);
 		stashStaleContent(editor);
 
-		const pageData = buildWritingFileData({
-			tlEditorSnapshot: tlEditorSnapshot,
-			previewIsOutdated: true,
-		})
-		props.save(pageData);
-	}
+                const pageData = buildWritingFileData({
+                        tlEditorSnapshot: tlEditorSnapshot,
+                        previewIsOutdated: true,
+                        linkGroups: linkGroupsRef.current,
+                })
+                props.save(pageData);
+        }
 
 	const completeSave = async (editor: Editor): Promise<void> => {
 		verbose('completeSave');
@@ -285,18 +292,20 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 		}
 
 		if(previewUri) {
-			const pageData = buildWritingFileData({
-				tlEditorSnapshot: tlEditorSnapshot,
-				previewUri,
-			})
-			props.save(pageData);
+                        const pageData = buildWritingFileData({
+                                tlEditorSnapshot: tlEditorSnapshot,
+                                previewUri,
+                                linkGroups: linkGroupsRef.current,
+                        })
+                        props.save(pageData);
 			// await savePngExport(props.plugin, previewUri, props.fileRef) // REVIEW: Still need a png?
 
 		} else {
-			const pageData = buildWritingFileData({
-				tlEditorSnapshot: tlEditorSnapshot,
-			})
-			props.save(pageData);
+                        const pageData = buildWritingFileData({
+                                tlEditorSnapshot: tlEditorSnapshot,
+                                linkGroups: linkGroupsRef.current,
+                        })
+                        props.save(pageData);
 		}
 
 		return;
@@ -368,9 +377,13 @@ export function TldrawWritingEditor(props: TldrawWritingEditorProps) {
 	///////////////////
 
     async function fetchFileData() {
-        const inkFileData = await getInkFileData(props.plugin, props.writingFile)
-        if(inkFileData.tldraw) {
-            const snapshot = prepareWritingSnapshot(inkFileData.tldraw as TLEditorSnapshot);
+        const { pageData, didBackfill } = await getInkFileData(props.plugin, props.writingFile)
+        if(didBackfill) {
+            props.save(pageData);
+        }
+        updateLinkGroups(pageData.linkGroups ?? {});
+        if(pageData.tldraw) {
+            const snapshot = prepareWritingSnapshot(pageData.tldraw as TLEditorSnapshot);
             setTlEditorSnapshot(snapshot);
         }
     }
