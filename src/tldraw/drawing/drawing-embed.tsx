@@ -1,9 +1,9 @@
 import "./drawing-embed.scss";
 import * as React from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TldrawDrawingEditor, TldrawDrawingEditorWrapper } from "./tldraw-drawing-editor";
 import InkPlugin from "../../main";
-import { InkFileData, backfillLinkGroupsIfMissing } from "../../utils/page-file";
+import { InkFileData, LinkGroup, backfillLinkGroupsIfMissing } from "../../utils/page-file";
 import { TFile } from "obsidian";
 import { rememberDrawingFile } from "src/utils/rememberDrawingFile";
 import { GlobalSessionState } from "src/logic/stores";
@@ -66,24 +66,41 @@ export function DrawingEmbed (props: {
 	// const activeEmbedId = useSelector((state: GlobalSessionState) => state.activeEmbedId);
 	// const dispatch = useDispatch();
 
-	const setEmbedState = useSetAtom(embedStateAtom);
+        const setEmbedState = useSetAtom(embedStateAtom);
+        const [linkMenuState, setLinkMenuState] = useState<null | { groupId: string; link: LinkGroup; anchor: DOMRect }>(null);
 
 	// On first mount
-	React.useEffect( () => {
-		if(embedShouldActivateImmediately()) {
-			// dispatch({ type: 'global-session/setActiveEmbedId', payload: embedId })
-			setTimeout( () => {
-				switchToEditMode();
-			},200);
+        React.useEffect( () => {
+                if(embedShouldActivateImmediately()) {
+                        // dispatch({ type: 'global-session/setActiveEmbedId', payload: embedId })
+                        setTimeout( () => {
+                                switchToEditMode();
+                        },200);
 		}
 		
 		window.addEventListener('resize', handleResize);
 		handleResize();
 
         return () => {
-			window.removeEventListener('resize', handleResize);
-		}
-	}, [])
+                        window.removeEventListener('resize', handleResize);
+                }
+        }, [])
+
+        useEffect(() => {
+                if (!linkMenuState) return;
+
+                const handleClick = (event: MouseEvent) => {
+                        if (!(event.target instanceof Node)) return;
+                        if (embedContainerElRef.current && embedContainerElRef.current.contains(event.target)) {
+                                return;
+                        }
+                        setLinkMenuState(null);
+                };
+
+                const options: AddEventListenerOptions = { capture: true };
+                document.addEventListener('mousedown', handleClick, options);
+                return () => document.removeEventListener('mousedown', handleClick, options);
+        }, [linkMenuState]);
 
 	// let isActive = (embedId === activeEmbedId);
 	// if(!isActive && state === 'edit') {
@@ -139,31 +156,53 @@ export function DrawingEmbed (props: {
 				}}
 			>
 			
-				<DrawingEmbedPreviewWrapper
-					plugin = {props.plugin}
-					onReady = {() => {}}
-					drawingFile = {props.drawingFileRef}
-					onClick = { async () => {
-						// dispatch({ type: 'global-session/setActiveEmbedId', payload: embedId })
-						switchToEditMode();
-					}}
-				/>
+                                <DrawingEmbedPreviewWrapper
+                                        plugin = {props.plugin}
+                                        onReady = {() => {}}
+                                        drawingFile = {props.drawingFileRef}
+                                        onClick = { async () => {
+                                                // dispatch({ type: 'global-session/setActiveEmbedId', payload: embedId })
+                                                switchToEditMode();
+                                        }}
+                                        onLinkGroupClick={(payload) => setLinkMenuState(payload)}
+                                />
 			
-				<TldrawDrawingEditorWrapper
-					onReady = {() => {}}
-					plugin = {props.plugin}
-					drawingFile = {props.drawingFileRef}
-					save = {props.saveSrcFile}
+                                <TldrawDrawingEditorWrapper
+                                        onReady = {() => {}}
+                                        plugin = {props.plugin}
+                                        drawingFile = {props.drawingFileRef}
+                                        save = {props.saveSrcFile}
 					embedded
 					saveControlsReference = {registerEditorControls}
 					closeEditor = {saveAndSwitchToPreviewMode}
 					extendedMenu = {commonExtendedOptions}
-					resizeEmbed = {resizeEmbed}
-				/>
+                                        resizeEmbed = {resizeEmbed}
+                                />
 
-			</div>				
-		</div>
-	</>;
+                        </div>
+
+                        {linkMenuState && (
+                                <div
+                                        className="ddc_ink_link-menu"
+                                        style={getLinkMenuPosition(linkMenuState.anchor)}
+                                >
+                                        <div className="ddc_ink_link-menu__header">Linked content</div>
+                                        <div className="ddc_ink_link-menu__body">
+                                                <div className="ddc_ink_link-menu__target" title={linkMenuState.link.target}>
+                                                        {linkMenuState.link.target}
+                                                </div>
+                                                {linkMenuState.link.meta && (
+                                                        <pre className="ddc_ink_link-menu__meta">{JSON.stringify(linkMenuState.link.meta, null, 2)}</pre>
+                                                )}
+                                                <div className="ddc_ink_link-menu__actions">
+                                                        <button type="button" disabled>Edit</button>
+                                                        <button type="button" disabled>Remove</button>
+                                                </div>
+                                        </div>
+                                </div>
+                        )}
+                </div>
+        </>;
 
 	//// Helper functions
 	/////////////////////
@@ -208,11 +247,12 @@ export function DrawingEmbed (props: {
 	// 	}
 	// }
 
-	function switchToEditMode() {
-		verbose('Set DrawingEmbedState: loadingEditor')
-		applyEmbedHeight();
-		setEmbedState(DrawingEmbedState.loadingEditor);
-	}
+        function switchToEditMode() {
+                verbose('Set DrawingEmbedState: loadingEditor')
+                applyEmbedHeight();
+                setLinkMenuState(null);
+                setEmbedState(DrawingEmbedState.loadingEditor);
+        }
 
 	async function saveAndSwitchToPreviewMode() {
 		verbose('Set DrawingEmbedState: loadingPreview');
@@ -225,14 +265,32 @@ export function DrawingEmbed (props: {
 		props.setEmbedProps(embedWidthRef.current, embedAspectRatioRef.current);
 	}
 
-	function handleResize() {
-		const maxWidth = getFullPageWidth(embedContainerElRef.current);
-		if (resizeContainerElRef.current) {
-			resizeContainerElRef.current.style.maxWidth = maxWidth + 'px';
-			const curWidth = resizeContainerElRef.current.getBoundingClientRect().width;
-			resizeContainerElRef.current.style.height = curWidth/embedAspectRatioRef.current + 'px';
-		}
-	};
+        function handleResize() {
+                const maxWidth = getFullPageWidth(embedContainerElRef.current);
+                if (resizeContainerElRef.current) {
+                        resizeContainerElRef.current.style.maxWidth = maxWidth + 'px';
+                        const curWidth = resizeContainerElRef.current.getBoundingClientRect().width;
+                        resizeContainerElRef.current.style.height = curWidth/embedAspectRatioRef.current + 'px';
+                }
+        };
+
+        function getLinkMenuPosition(anchor: DOMRect) {
+                const containerRect = embedContainerElRef.current?.getBoundingClientRect();
+                if (!containerRect) {
+                        return {
+                                position: 'absolute' as const,
+                                left: anchor.left,
+                                top: anchor.bottom + window.scrollY,
+                        };
+                }
+
+                const offsetTop = resizeContainerElRef.current?.offsetTop ?? 0;
+                return {
+                        position: 'absolute' as const,
+                        left: anchor.left - containerRect.left,
+                        top: anchor.bottom - containerRect.top + offsetTop,
+                };
+        }
 };
 
 

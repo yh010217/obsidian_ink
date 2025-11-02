@@ -100,10 +100,63 @@
 .theme-light {
     .ddc_ink_drawing-embed-preview {
         path { fill: rgb(29, 29, 29); }
-        
+
         .ddc_ink_drawing-placeholder {
             path { stroke: rgb(29, 29, 29) !important; }
             rect, circle { stroke: rgb(29, 29, 29) !important; }
+        }
+    }
+}
+
+.ddc_ink_link-menu {
+    position: absolute;
+    min-width: 220px;
+    max-width: 320px;
+    background-color: var(--modal-background);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    padding: 0.75em;
+
+    &__header {
+        font-weight: 600;
+        margin-bottom: 0.5em;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75em;
+    }
+
+    &__target {
+        font-size: 0.85em;
+        word-break: break-word;
+    }
+
+    &__meta {
+        background-color: var(--background-primary-alt);
+        padding: 0.5em;
+        border-radius: 6px;
+        max-height: 8em;
+        overflow: auto;
+        font-size: 0.75em;
+    }
+
+    &__actions {
+        display: flex;
+        gap: 0.5em;
+
+        button {
+            flex: 1;
+            padding: 0.4em 0.6em;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--interactive-normal);
+            color: inherit;
+            cursor: not-allowed;
         }
     }
 }

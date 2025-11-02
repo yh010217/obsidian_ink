@@ -11,7 +11,7 @@ type Metadata = {
         transcript?: string;
 };
 
-export type LinkGroup = { target: string };
+export type LinkGroup = { target: string; meta?: Record<string, unknown> };
 export type LinkGroupMap = Record<string, LinkGroup>;
 
 export type InkFileData = {
