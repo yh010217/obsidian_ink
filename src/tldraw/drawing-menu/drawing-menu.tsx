@@ -8,6 +8,7 @@ import { Editor } from "@tldraw/tldraw";
 import { silentlyChangeStore } from "src/utils/tldraw-helpers";
 import { DrawIcon } from "src/graphics/icons/draw-icon";
 import classNames from "classnames";
+import {LinkIcon} from "../../graphics/icons/link-icon";
 
 //////////
 //////////
@@ -16,6 +17,7 @@ export enum tool {
 	select = 'select',
 	draw = 'draw',
 	eraser = 'eraser',
+	showLink = 'showLink',
 }
 interface DrawingMenuProps {
     getTlEditor: () => Editor | undefined,
@@ -63,6 +65,12 @@ export const DrawingMenu = React.forwardRef<HTMLDivElement, DrawingMenuProps>((p
 		if (!editor) return;
 		editor.setCurrentTool('eraser');
 		setCurTool(tool.eraser);
+	}
+	function activateShowLinkTool() {
+		const editor = props.getTlEditor();
+		if (!editor) return;
+		editor.setCurrentTool("select");
+		setCurTool(tool.showLink);
 	}
 
     ///////////
@@ -113,11 +121,18 @@ export const DrawingMenu = React.forwardRef<HTMLDivElement, DrawingMenuProps>((p
                 >
                     <EraseIcon/>
                 </button>
+
+                <button
+                    onPointerDown={activateShowLinkTool}
+                    disabled={curTool === tool.showLink}
+                >
+                    <LinkIcon />
+                </button>
             </div>
             <div
                 className='ink_other-menu'
             >
-                
+
             </div>
         </div>
     </>;
