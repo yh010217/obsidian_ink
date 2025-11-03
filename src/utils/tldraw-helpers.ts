@@ -354,6 +354,7 @@ export const hideWritingContainer = (editor: Editor) => {
 			},
 			meta: {
 				savedH: savedH,
+				...writingContainerShape.meta,  // 기존 meta 보존
 			},
 		});
 		lockShape(editor, writingContainerShape);
@@ -381,6 +382,7 @@ export const hideWritingLines = (editor: Editor) => {
 			},
 			meta: {
 				savedH: savedH,
+				...writingLinesShape.meta,  // 기존 meta 보존
 			}
 		});
 		lockShape(editor, writingLinesShape);
@@ -403,6 +405,7 @@ export const unhideWritingContainer = (editor: Editor) => {
 			},
 			meta: {
 				savedH: undefined,
+				...writingContainerShape.meta,
 			}
 		});
 		lockShape(editor, writingContainerShape);
@@ -425,6 +428,7 @@ export const unhideWritingLines = (editor: Editor) => {
 			},
 			meta: {
 				savedH: undefined,
+				...writingLinesShape.meta,
 			}
 		});
 		lockShape(editor, writingLinesShape);
@@ -731,6 +735,9 @@ export const resizeWritingTemplateInvitingly = (editor: Editor) => {
 			type: writingContainerShape.type,
 			props: {
 				h: contentBounds.h,
+			},
+			meta:{
+				...writingContainerShape.meta,
 			}
 		})
 		editor.updateShape({
@@ -738,6 +745,9 @@ export const resizeWritingTemplateInvitingly = (editor: Editor) => {
 			type: writingLinesShape.type,
 			props: {
 				h: contentBounds.h,
+			},
+			meta:{
+				...writingLinesShape.meta,
 			}
 		})
 		lockShape(editor, writingContainerShape);
@@ -770,6 +780,9 @@ export const resizeWritingTemplateTightly = (editor: Editor) => {
 			type: writingContainerShape.type,
 			props: {
 				h: contentBounds.h,
+			},
+			meta:{
+				...writingContainerShape.meta,
 			}
 		})
 		editor.updateShape({
@@ -777,6 +790,9 @@ export const resizeWritingTemplateTightly = (editor: Editor) => {
 			type: writingLinesShape.type,
 			props: {
 				h: contentBounds.h,
+			},
+			meta:{
+				...writingLinesShape.meta,
 			}
 		})
 		lockShape(editor, writingContainerShape);
