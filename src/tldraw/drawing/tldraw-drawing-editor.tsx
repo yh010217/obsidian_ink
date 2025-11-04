@@ -22,6 +22,7 @@ import { ResizeHandle } from 'src/components/jsx-components/resize-handle/resize
 import { debug, verbose, warn } from 'src/utils/log-to-console';
 import { SecondaryMenuBar } from '../secondary-menu-bar/secondary-menu-bar';
 import ModifyMenu from '../modify-menu/modify-menu';
+import {GroupInfoPanel} from "../group-info-panel/group-info-panel";
 
 ///////
 ///////
@@ -357,6 +358,7 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 					onStoreChange = {(tlEditor: Editor) => queueOrRunStorePostProcesses(tlEditor)}
 				/>
 			</SecondaryMenuBar>
+			<GroupInfoPanel getTlEditor={getTlEditor} />
 		</div>
 
 		{props.resizeEmbed && (

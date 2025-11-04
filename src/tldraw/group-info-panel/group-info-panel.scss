@@ -1,0 +1,45 @@
+.ink_group-info-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  pointer-events: all;
+
+  &__title {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 8px;
+    color: var(--text-normal);
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__item {
+    font-size: 11px;
+    padding: 4px 8px;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    color: var(--text-normal);
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: var(--background-modifier-hover);
+    }
+
+    &--highlighted {
+      background: var(--background-modifier-active);
+      font-weight: 600;
+    }
+  }
+}
