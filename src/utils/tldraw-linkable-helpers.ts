@@ -1,6 +1,9 @@
-import { Editor, TLShapeId, TLUnknownShape,} from "@tldraw/tldraw";
+import {createShapeId, Editor, TLShapeId, TLUnknownShape,} from "@tldraw/tldraw";
 import { debug, warn, info, error, http, verbose } from "./log-to-console";
 
+
+// tldraw 팔레트 예시
+export type TLColor = 'black'|'blue'|'green'|'red'|'yellow'|'violet'|'grey'
 
 type LinkableGroup = {
     id: string;
@@ -57,6 +60,8 @@ export function getShapesByLinkableGroup(
     editor: Editor,
     linkableGroupId: string
 ): TLUnknownShape[] {
+
+    // TODO : all shapes의 각 shape에서 구하지 말고, groupId 로 group 내 shape 정보를 구할 수 있음.
     const allShapes = editor.getCurrentPageShapes();
     return allShapes.filter(shape => {
         const linkableGroups = (shape.meta?.linkableGroups as string[]) || [];
@@ -193,4 +198,62 @@ export function getLinkableGroupInfo(
 export function getLinkableGroupName(editor: Editor, groupId: string): string {
     const group = getLinkableGroupInfo(editor, groupId);
     return group?.name || groupId;
+}
+
+
+export function highlightOn(editor: Editor, ids: TLShapeId[], color: TLColor = 'red') {
+    editor.run(() => {
+        ids.forEach((id) => {
+            const s = editor.getShape(id)
+            if (!s) return
+
+
+            const cloneId = createShapeId()
+            editor.createShape({
+                id: cloneId,
+                type: s.type,
+                parentId: s.parentId,
+                // index: topIndex(editor, s.parentId),
+                x: (s as any).x,              // TLBaseShape 공통 필드
+                y: (s as any).y,
+                rotation: (s as any).rotation,
+                isLocked: false,
+                meta: { __hlSourceId: s.id }, // 역참조
+                props: { ...s.props, color }, // 색만 바꾼다
+            })
+
+            // 원본에 클론 id 저장 (토글/정리용)
+            editor.updateShape({
+                id: s.id,
+                type: s.type,
+                meta: { ...s.meta, __hlCloneId: cloneId },
+            })
+        })
+    })
+}
+
+export function allHighlightOff(editor: Editor) {
+    // meta에 __hlSourceId가 있는 shape 모두 찾기 - 클론들
+    const allClonedShapes = editor.getCurrentPageShapes()
+        .filter((s) => (s.meta as any)?.__hlSourceId);
+
+    // clone의 원본 id 모으기
+    const sourceIds = allClonedShapes.map((s) => (s.meta as any).__hlSourceId as TLShapeId);
+    const sourceShapes = sourceIds.map((id) => editor.getShape(id)).filter((s): s is TLUnknownShape => !!s);
+
+    editor.run(() => {
+        // 클론 삭제하기
+        allClonedShapes.forEach((s) => {
+            editor.deleteShapes([s.id])
+        })
+        // 원본 메타 정리하기
+        sourceShapes.forEach((s) => {
+            const { __hlCloneId, ...restMeta } = (s.meta as any) ?? {}
+            editor.updateShape({
+                id: s.id,
+                type: s.type,
+                meta: Object.keys(restMeta).length ? restMeta : undefined,
+            })
+        });
+    })
 }

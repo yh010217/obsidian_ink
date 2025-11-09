@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import "./group-info-panel.scss";
 import * as React from "react";
-import { Editor, TLShapeId } from "@tldraw/tldraw";
+import {createShapeId, Editor, TLShapeId} from "@tldraw/tldraw";
 import {
     getLinkableGroups,
     getLinkableGroupInfo,
-    getShapesByLinkableGroup,
+    getShapesByLinkableGroup, highlightOn, TLColor, allHighlightOff,
 } from "src/utils/tldraw-linkable-helpers";
 
 interface GroupInfoPanelProps {
@@ -74,6 +74,8 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         const editor = props.getTlEditor();
         if (!editor) return;
 
+        allHighlightOff(editor);
+
         // 같은 그룹이면 하이라이트 제거
         if (highlightedGroup === groupId) {
             setHighlightedGroup(null);
@@ -87,9 +89,13 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         const shapeIds = shapes.map((shape) => shape.id as TLShapeId);
 
         if (shapeIds.length > 0) {
-            editor.setSelectedShapes(shapeIds);
+            // editor.setSelectedShapes(shapeIds);
+            const groupInfo = getLinkableGroupInfo(editor, groupId);
+            const color = groupInfo?.color as TLColor || "red";
+            highlightOn(editor, shapeIds, color);
         }
     }
+
 
     function getGroupInfo(groupId: string) {
         const editor = props.getTlEditor();
