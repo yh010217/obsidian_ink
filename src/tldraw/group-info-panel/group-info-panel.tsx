@@ -5,7 +5,7 @@ import {createShapeId, Editor, TLShapeId} from "@tldraw/tldraw";
 import {
     getLinkableGroups,
     getLinkableGroupInfo,
-    getShapesByLinkableGroup, highlightOn, TLColor, allHighlightOff,
+    getShapesByLinkableGroup, highlightOn, TLColor, allHighlightOff, attachHighlightSync,
 } from "src/utils/tldraw-linkable-helpers";
 
 interface GroupInfoPanelProps {
@@ -25,6 +25,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         string | null
         >(null);
     // const canvasContainerRef = React.useRef<HTMLDivElement>(null);
+    let disposeCloneSync: React.MutableRefObject<(() => void) | undefined> = React.useRef<() => void>();
 
     React.useEffect(() => {
         let removeListener: () => void;
@@ -75,6 +76,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         if (!editor) return;
 
         allHighlightOff(editor);
+        disposeCloneSync.current?.();
 
         // 같은 그룹이면 하이라이트 제거
         if (highlightedGroup === groupId) {
@@ -92,7 +94,8 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
             // editor.setSelectedShapes(shapeIds);
             const groupInfo = getLinkableGroupInfo(editor, groupId);
             const color = groupInfo?.color as TLColor || "red";
-            highlightOn(editor, shapeIds, color);
+            const cloneIds = highlightOn(editor, shapeIds, color);
+            disposeCloneSync.current = attachHighlightSync(editor, shapeIds,cloneIds);
         }
     }
 
