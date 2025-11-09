@@ -119,7 +119,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                     : ""
                             }`}
                             style={{
-                                borderLeft: `4px solid ${color}`,
+                                borderLeft: isHighlighted ? `4px solid ${color}` : '4px solid transparent',
                                 cursor: "pointer",
                             }}
                             onClick={() => handleGroupClick(groupId)}

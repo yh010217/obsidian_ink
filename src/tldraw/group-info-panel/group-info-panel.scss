@@ -28,7 +28,7 @@
   &__item {
     font-size: 11px;
     padding: 4px 8px;
-    background: var(--background-secondary);
+    //background: var(--background-secondary);
     border-radius: 4px;
     color: var(--text-normal);
     transition: background-color 0.2s ease;
@@ -38,7 +38,7 @@
     }
 
     &--highlighted {
-      background: var(--background-modifier-active);
+      background: var(--background-modifier-active-hover);
       font-weight: 600;
     }
   }
