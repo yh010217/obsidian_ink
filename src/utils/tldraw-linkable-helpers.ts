@@ -229,8 +229,12 @@ export function highlightOn(editor: Editor, ids: TLShapeId[], color: TLColor = '
                 id: s.id,
                 type: s.type,
                 meta: { ...s.meta, __hlCloneId: cloneId },
-            })
+            });
         })
+
+        // source, clone 둘다 select 되도록
+        const bothIds : TLShapeId[] = [...ids, ...clonedShapeIds];
+        editor.select(...bothIds as TLShapeId);
     })
     return clonedShapeIds;
 }
@@ -259,129 +263,4 @@ export function allHighlightOff(editor: Editor) {
             })
         });
     })
-}
-/**
- * 주어진 shapeIds와 cloneIds 간의 위치, 크기, 회전 동기화를 설정합니다.
- * shapeIds의 변경사항이 cloneIds에 반영됩니다.
- *
- * @param editor - TLDraw 에디터 인스턴스
- * @param shapeIds - 동기화할 원본 shape ID 배열
- * @param cloneIds - 동기화 대상 클론 shape ID 배열
- * @returns dispose 함수 - 호출 시 동기화 해제
- */
-export function attachHighlightSync(
-    editor: Editor,
-    shapeIds: TLShapeId[],
-    cloneIds: TLShapeId[]
-) {
-    const shapeToCloneMap = new Map(
-        shapeIds.map((id, index) => [id, cloneIds[index]])
-    );
-
-    const cloneToShapeMap = new Map(
-        cloneIds.map((id, index) => [id, shapeIds[index]])
-    );
-
-    let isSyncing = false;
-
-    const hasGeometryChanged = (from: any, to: any) => {
-        // 위치 변화
-        if (from.x !== to.x || from.y !== to.y) return true;
-
-        // 회전 변화
-        if (from.rotation !== to.rotation) return true;
-
-        // 크기 변화 (여러 shape 타입 대응)
-        const fromProps : any = from.props || {};
-        const toProps : any = to.props || {};
-
-        if (fromProps.w !== toProps.w) return true;
-        if (fromProps.h !== toProps.h) return true;
-
-        // size 객체가 있는 경우 (일부 shape 타입)
-        if (fromProps.size !== toProps.size) return true;
-
-        // geo의 경우 scale도 체크
-        if (fromProps.scale !== toProps.scale) return true;
-
-        return false;
-    };
-
-    const syncShape = (sourceId: TLShapeId, targetId: TLShapeId) => {
-        if (isSyncing) return;
-
-        const sourceShape = editor.getShape(sourceId);
-        const targetShape = editor.getShape(targetId);
-
-        if (!sourceShape || !targetShape) return;
-
-        isSyncing = true;
-
-        try {
-            const updates: any = {
-                id: targetId,
-                type: targetShape.type,
-                x: sourceShape.x,
-                y: sourceShape.y,
-                rotation: sourceShape.rotation,
-            };
-
-            // props 전체를 복사하되, 색상 등은 유지
-            const sourceProps = sourceShape.props as any;
-            const targetProps = targetShape.props as any;
-
-            updates.props = {
-                ...targetProps,
-            };
-
-            // 크기 관련 속성만 선별적으로 복사
-            if (sourceProps.w !== undefined) {
-                updates.props.w = sourceProps.w;
-            }
-            if (sourceProps.h !== undefined) {
-                updates.props.h = sourceProps.h;
-            }
-            if (sourceProps.size !== undefined) {
-                updates.props.size = sourceProps.size;
-            }
-            if (sourceProps.scale !== undefined) {
-                updates.props.scale = sourceProps.scale;
-            }
-
-            editor.updateShape(updates);
-        } finally {
-            isSyncing = false;
-        }
-    };
-
-    const dispose = editor.store.listen(
-        ({ changes }) => {
-            if (isSyncing) return;
-
-            const { updated } = changes;
-
-            Object.values(updated).forEach(([from, to]) => {
-                // 실제로 geometry가 변경되었는지 확인
-                if (!hasGeometryChanged(from, to)) return;
-
-                const shapeId = to.id as TLShapeId;
-
-                // Source → Clone
-                const cloneId = shapeToCloneMap.get(shapeId);
-                if (cloneId) {
-                    syncShape(shapeId, cloneId);
-                    return;
-                }
-
-                // Clone → Source
-                const sourceId = cloneToShapeMap.get(shapeId);
-                if (sourceId) {
-                    syncShape(shapeId, sourceId);
-                }
-            });
-        },
-        { source: 'user', scope: 'document' }
-    );
-
-    return dispose;
 }
