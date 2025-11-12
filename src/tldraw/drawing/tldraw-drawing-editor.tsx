@@ -66,7 +66,8 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 	const longDelayPostProcessTimeoutRef = useRef<NodeJS.Timeout>();
 	const tlEditorRef = useRef<Editor>();
 	const editorWrapperRefEl = useRef<HTMLDivElement>(null);
-	
+	const groupUnmountRef = useRef<NodeJS.Timeout | undefined>();
+
 	// On mount
 	React.useEffect( ()=> {
 		verbose('EDITOR mounted');
@@ -176,6 +177,9 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 		if(props.onReady) props.onReady();
 
 		return () => {
+			console.log('unmounting editor');
+			console.log(groupUnmountRef.current);
+			clearTimeout(groupUnmountRef.current);
 			unmountActions();
 		};
 	}
@@ -358,7 +362,7 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 					onStoreChange = {(tlEditor: Editor) => queueOrRunStorePostProcesses(tlEditor)}
 				/>
 			</SecondaryMenuBar>
-			<GroupInfoPanel getTlEditor={getTlEditor} />
+			<GroupInfoPanel getTlEditor={getTlEditor} groupUnmountRef={groupUnmountRef}/>
 		</div>
 
 		{props.resizeEmbed && (

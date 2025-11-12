@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import "./group-info-panel.scss";
 import * as React from "react";
-import {createShapeId, Editor, TLShapeId} from "@tldraw/tldraw";
+import {createShapeId, Editor, TLPageId, TLShapeId} from "@tldraw/tldraw";
 import {
     getLinkableGroups,
     getLinkableGroupInfo,
@@ -10,13 +10,7 @@ import {
 
 interface GroupInfoPanelProps {
     getTlEditor: () => Editor | undefined;
-}
-
-// 하이라이트 오버레이를 저장할 state
-interface HighlightOverlay {
-    groupId: string;
-    shapes: TLShapeId[];
-    color: string;
+    groupUnmountRef: React.MutableRefObject<NodeJS.Timeout | undefined>;
 }
 
 export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
@@ -28,11 +22,12 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
     let disposeCloneSync: React.MutableRefObject<(() => void) | undefined> = React.useRef<() => void>();
 
     React.useEffect(() => {
-        let removeListener: () => void;
+        let tlEditor : Editor;
+        let removeListener: (() => void) | undefined;
 
         const mountDelayMs = 100;
-        setTimeout(() => {
-            const tlEditor = props.getTlEditor();
+        const timeoutId = setTimeout(() => {
+            tlEditor = props.getTlEditor()!;
             if (!tlEditor) return;
 
             // Selection 변경 감지
@@ -45,12 +40,20 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                     scope: "all",
                 }
             );
+            // unmount 시 cleanup 함수 전달
+            props.groupUnmountRef.current = setTimeout(() =>  {
+                allHighlightOff(tlEditor);
+                disposeCloneSync.current?.();
+                removeListener?.();
+            },mountDelayMs);
 
             // 초기 상태 업데이트
             updateSelectedGroups(tlEditor);
         }, mountDelayMs);
 
-        return () => removeListener?.();
+        return () => {
+            clearTimeout(timeoutId);
+        };
     }, []);
 
     function updateSelectedGroups(editor: Editor) {
