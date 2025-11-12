@@ -264,3 +264,35 @@ export function allHighlightOff(editor: Editor) {
         });
     })
 }
+
+export function selectionCheck(
+    editor: Editor,
+    sourceIds: TLShapeId[],
+    setHighlightOff: () => void
+) {
+    const sourceIdSet = new Set(sourceIds);
+    let wasAllSelected = true;
+
+    const dispose = editor.store.listen(
+        () => {
+            const selectedShapeIds = editor.getSelectedShapeIds();
+            const selectedIdSet = new Set(selectedShapeIds);
+
+            // 현재 모든 source가 선택되어 있는지
+            const allSourcesSelected = Array.from(sourceIdSet).every(
+                id => selectedIdSet.has(id)
+            );
+
+            // 이전에는 전부 선택되어 있었는데 지금은 아닌 경우
+            if (wasAllSelected && !allSourcesSelected) {
+                setHighlightOff();
+                allHighlightOff(editor);
+                return; // dispose 후 더 이상 실행 안 됨
+            }
+
+            wasAllSelected = allSourcesSelected;
+        },
+        { source: 'user' }
+    );
+    return dispose;
+}

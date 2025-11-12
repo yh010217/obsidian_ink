@@ -5,7 +5,7 @@ import {createShapeId, Editor, TLShapeId} from "@tldraw/tldraw";
 import {
     getLinkableGroups,
     getLinkableGroupInfo,
-    getShapesByLinkableGroup, highlightOn, TLColor, allHighlightOff,
+    getShapesByLinkableGroup, highlightOn, TLColor, allHighlightOff, selectionCheck,
 } from "src/utils/tldraw-linkable-helpers";
 
 interface GroupInfoPanelProps {
@@ -95,7 +95,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
             const groupInfo = getLinkableGroupInfo(editor, groupId);
             const color = groupInfo?.color as TLColor || "red";
             const cloneIds = highlightOn(editor, shapeIds, color);
-            // disposeCloneSync.current = attachHighlightSync(editor, shapeIds,cloneIds);
+            disposeCloneSync.current = selectionCheck(editor, shapeIds,()=>{setHighlightedGroup(null);});
         }
     }
 
