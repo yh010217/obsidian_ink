@@ -1,46 +1,28 @@
 import {createShapeId, Editor, TLEventMapHandler, TLShapeId, TLUnknownShape,} from "@tldraw/tldraw";
-import { debug, warn, info, error, http, verbose } from "./log-to-console";
 
 
 // tldraw 팔레트 예시
 export type TLColor = 'black'|'blue'|'green'|'red'|'yellow'|'violet'|'grey'
+
+export type LinkableFileEntry = {
+    name: string;         // UI용 표시 이름
+    path: string;         // Obsidian Vault 내 상대 경로
+    line?: number;        // 이동하려는 line 번호 (optional)
+};
+
 
 type LinkableGroup = {
     id: string;
     name?: string;
     color?: string;
     createdAt?: string;
+    link_files?: LinkableFileEntry[];
     [key: string]: any;  // 추가 메타데이터
 };
 
 type PageLinkableGroups = {
     [key: string]: LinkableGroup;
 };
-
-
-/**
- * Shape에 linkableGroups를 설정합니다
- */
-export function setLinkableGroups(
-    editor: Editor,
-    shapeId: TLShapeId,
-    linkableGroups: string[]
-) {
-    const shape = editor.getShape(shapeId);
-    if (!shape) {
-        warn(`Shape not found: ${shapeId}`);
-        return;
-    }
-
-    editor.updateShape({
-        id: shapeId,
-        type: shape.type,
-        meta: {
-            ...shape.meta,
-            linkableGroups: linkableGroups
-        }
-    });
-}
 
 /**
  * Shape에서 linkableGroups를 읽습니다
@@ -70,33 +52,6 @@ export function getShapesByLinkableGroup(
 }
 
 /**
- * Shape에 linkableGroup을 추가합니다 (중복 체크)
- */
-export function addLinkableGroup(
-    editor: Editor,
-    shapeId: TLShapeId,
-    linkableGroupId: string
-) {
-    const currentGroups = getLinkableGroups(editor, shapeId);
-    if (!currentGroups.includes(linkableGroupId)) {
-        setLinkableGroups(editor, shapeId, [...currentGroups, linkableGroupId]);
-    }
-}
-
-/**
- * Shape에서 linkableGroup을 제거합니다
- */
-export function removeLinkableGroup(
-    editor: Editor,
-    shapeId: TLShapeId,
-    linkableGroupId: string
-) {
-    const currentGroups = getLinkableGroups(editor, shapeId);
-    setLinkableGroups(editor, shapeId, currentGroups.filter(id => id !== linkableGroupId));
-}
-
-
-/**
  * 현재 페이지의 모든 linkableGroups를 가져옵니다
  */
 export function getPageLinkableGroups(editor: Editor): PageLinkableGroups {
@@ -111,77 +66,6 @@ export function getPageLinkableGroups(editor: Editor): PageLinkableGroups {
 }
 
 /**
- * 페이지에 linkableGroup을 추가/업데이트합니다
- */
-export function setPageLinkableGroup(
-    editor: Editor,
-    groupId: string,
-    groupData: LinkableGroup
-) {
-    const currentPageId = editor.getCurrentPageId();
-    const page = editor.store.get(currentPageId);
-
-    if (!page || page.typeName !== 'page') {
-        warn(`Page not found: ${currentPageId}`);
-        return;
-    }
-
-    const currentGroups = getPageLinkableGroups(editor);
-    const updatedGroups: PageLinkableGroups = {
-        ...currentGroups,
-        [groupId]: {
-            ...groupData,
-            id: groupId,  // ID는 항상 확실하게 설정
-        }
-    };
-
-    editor.store.update(currentPageId, (record) => {
-        return {
-            ...record,
-            meta: {
-                ...record.meta,
-                linkableGroups: updatedGroups
-            }
-        };
-    });
-}
-
-/**
- * 페이지에서 linkableGroup을 제거합니다
- */
-export function removePageLinkableGroup(editor: Editor, groupId: string) {
-    const currentPageId = editor.getCurrentPageId();
-    const page = editor.store.get(currentPageId);
-
-    if (!page || page.typeName !== 'page') {
-        warn(`Page not found: ${currentPageId}`);
-        return;
-    }
-
-    const currentGroups = getPageLinkableGroups(editor);
-    const { [groupId]: removed, ...updatedGroups } = currentGroups;
-
-    // 해당 그룹을 참조하는 모든 shape의 linkableGroups에서도 제거
-    const allShapes = editor.getCurrentPageShapes();
-    allShapes.forEach(shape => {
-        const shapeGroups = getLinkableGroups(editor, shape.id as TLShapeId);
-        if (shapeGroups.includes(groupId)) {
-            removeLinkableGroup(editor, shape.id as TLShapeId, groupId);
-        }
-    });
-
-    editor.store.update(currentPageId, (record) => {
-        return {
-            ...record,
-            meta: {
-                ...record.meta,
-                linkableGroups: updatedGroups
-            }
-        };
-    });
-}
-
-/**
  * 특정 linkableGroup의 정보를 가져옵니다
  */
 export function getLinkableGroupInfo(
@@ -191,15 +75,6 @@ export function getLinkableGroupInfo(
     const groups = getPageLinkableGroups(editor);
     return groups[groupId] || null;
 }
-
-/**
- * 그룹 ID로 그룹 이름을 가져옵니다
- */
-export function getLinkableGroupName(editor: Editor, groupId: string): string {
-    const group = getLinkableGroupInfo(editor, groupId);
-    return group?.name || groupId;
-}
-
 
 export function highlightOn(editor: Editor, ids: TLShapeId[], color: TLColor = 'red') : TLShapeId[]{
     const clonedShapeIds: TLShapeId[] = [];

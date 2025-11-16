@@ -362,7 +362,9 @@ export function TldrawDrawingEditor(props: TldrawDrawingEditorProps) {
 					onStoreChange = {(tlEditor: Editor) => queueOrRunStorePostProcesses(tlEditor)}
 				/>
 			</SecondaryMenuBar>
-			<GroupInfoPanel getTlEditor={getTlEditor} groupUnmountRef={groupUnmountRef}/>
+			<GroupInfoPanel getTlEditor={getTlEditor}
+							plugin={props.plugin}
+							groupUnmountRef={groupUnmountRef}/>
 		</div>
 
 		{props.resizeEmbed && (
