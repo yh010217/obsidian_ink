@@ -12,6 +12,8 @@ import {
 import {useAtomValue} from "jotai";
 import InkPlugin, {inkPluginAtom} from "../../main";
 import { GroupAddForm } from "./group-add-form";
+import { GroupListIcon } from "src/graphics/icons/group-list-icon";
+import { SmallCrossIcon } from "src/graphics/icons/small-cross-icon";
 
 interface GroupInfoPanelProps {
     getTlEditor: () => Editor | undefined;
@@ -23,6 +25,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
     const [selectedGroups, setSelectedGroups] = React.useState<string[]>([]);
     const [highlightedGroup, setHighlightedGroup] = React.useState<string | null>(null);
     const [openFileListGroupId, setOpenFileListGroupId] = React.useState<string | null>(null);
+    const [isCollapsed, setIsCollapsed] = React.useState(false);
 
     // const canvasContainerRef = React.useRef<HTMLDivElement>(null);
     let disposeCloneSync: React.MutableRefObject<(() => void) | undefined> = React.useRef<() => void>();
@@ -156,6 +159,39 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         await openFile(linkableFile,file,leaf);
     }
 
+    if (isCollapsed) {
+        return (
+            <div 
+                className="ink_group-info-panel ink_menu-bar ink_menu-bar_full" 
+                style={{ 
+                    minWidth: "auto",
+                    width: "auto", 
+                    height: "auto", 
+                    padding: "6px",
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    cursor: "pointer",
+                }}
+                onClick={() => setIsCollapsed(false)}
+                title="Open Group Info"
+            >
+                <button style={{
+                    background: "transparent",
+                    border: "none",
+                    width: "24px",
+                    height: "24px",
+                    cursor: "pointer",
+                    boxShadow: "none",
+                    padding: "0",
+                }}>
+                    <GroupListIcon/>
+                </button>
+            </div>
+        );
+    }
+
+
     return (
         <div className="ink_group-info-panel">
             {isAddFormOpen ? (
@@ -165,7 +201,29 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                 />
             ) : (
                 <>
-                    <div className="ink_group-info-panel__title">그룹 정보</div>
+                
+            <button 
+                onClick={() => setIsCollapsed(true)}
+                style={{
+                    position: "absolute",
+                    top: "8px",
+                    right: "8px",
+                    width: "24px",
+                    height: "24px",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    zIndex: 10,
+                    padding: "4px",
+                    lineHeight: 1,
+                    boxShadow: "none",
+                }}
+                title="Close"
+            >
+                <SmallCrossIcon/>
+            </button>
+                    <div className="ink_group-info-panel__title" style={{ paddingRight: '20px' }}>그룹 정보</div>
                     <div className="ink_group-info-panel__list">
                         {selectedGroups.map((groupId) => {
                             const groupInfo = getGroupInfo(groupId);
