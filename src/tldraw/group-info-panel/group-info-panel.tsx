@@ -30,19 +30,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
     // const canvasContainerRef = React.useRef<HTMLDivElement>(null);
     let disposeCloneSync: React.MutableRefObject<(() => void) | undefined> = React.useRef<() => void>();
 
-    const actionButtonStyle: React.CSSProperties = {
-        background: "transparent",
-        border: "none",
-        height: "16px",
-        fontSize: "12px",
-        cursor: "pointer",
-        padding: "0 6px",
-        color: "#888",
-        boxShadow: "none",
-        borderRadius: "8px",
-        position: "absolute",
-        right: "18px",
-    }
+
 
     React.useEffect(() => {
         let tlEditor: Editor;
@@ -162,35 +150,18 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
     if (isCollapsed) {
         return (
             <div 
-                className="ink_group-info-panel ink_menu-bar ink_menu-bar_full" 
-                style={{ 
-                    minWidth: "auto",
-                    width: "auto", 
-                    height: "auto", 
-                    padding: "6px",
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "center",
-                    cursor: "pointer",
-                }}
+                className="ink_group-info-panel ink_group-info-panel--collapsed ink_menu-bar ink_menu-bar_full" 
                 onClick={() => setIsCollapsed(false)}
                 title="Open Group Info"
             >
-                <button style={{
-                    background: "transparent",
-                    border: "none",
-                    width: "24px",
-                    height: "24px",
-                    cursor: "pointer",
-                    boxShadow: "none",
-                    padding: "0",
-                }}>
+                <button className="ink_group-info-panel__collapsed-button"
+                style={{boxShadow: 'none'}}
+                >
                     <GroupListIcon/>
                 </button>
             </div>
         );
     }
-
 
     return (
         <div className="ink_group-info-panel">
@@ -203,27 +174,14 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                 <>
                 
             <button 
+                className="ink_group-info-panel__close-button"
+                style={{boxShadow: 'none'}}
                 onClick={() => setIsCollapsed(true)}
-                style={{
-                    position: "absolute",
-                    top: "8px",
-                    right: "8px",
-                    width: "24px",
-                    height: "24px",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    zIndex: 10,
-                    padding: "4px",
-                    lineHeight: 1,
-                    boxShadow: "none",
-                }}
                 title="Close"
             >
                 <SmallCrossIcon/>
             </button>
-                    <div className="ink_group-info-panel__title" style={{ paddingRight: '20px' }}>그룹 정보</div>
+                    <div className="ink_group-info-panel__title">그룹 정보</div>
                     <div className="ink_group-info-panel__list">
                         {selectedGroups.map((groupId) => {
                             const groupInfo = getGroupInfo(groupId);
@@ -240,7 +198,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                     }`}
                                     style={{
                                         borderLeft: isHighlighted ? `4px solid ${color}` : '4px solid transparent',
-                                        cursor: "pointer",
                                     }}
                                     onClick={() => handleGroupClick(groupId)}
                                 >
@@ -248,7 +205,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                     {isHighlighted && (
                                         <button
                                             className="ink_group-info-panel__action-button"
-                                            style={actionButtonStyle}
                                             onClick={(e) => {
                                                 handleActionClick(e, groupId);
                                             }}
@@ -264,11 +220,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                                     key={idx}
                                                     className="ink_group-info-panel__file-item"
                                                     onClick={(e) => handleOpenFile(filePath, e)}
-                                                    style={{
-                                                        padding: "4px 8px",
-                                                        cursor: "pointer",
-                                                        borderTop: "1px solid #ddd",
-                                                    }}
                                                 >
                                                     {filePath.name}
                                                 </div>

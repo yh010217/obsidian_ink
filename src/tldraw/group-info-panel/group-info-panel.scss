@@ -1,145 +1,234 @@
 .ink_group-info-panel {
-  position: absolute;
-  bottom: 40px;
-  right: 20px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: 12px;
-  min-width: 200px;
-  max-width: 300px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  pointer-events: all;
+	position: absolute;
+	bottom: 40px;
+	right: 20px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 12px;
+	min-width: 200px;
+	max-width: 300px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	z-index: 1000;
+	pointer-events: all;
 
-  &__title {
-    font-weight: 600;
-    font-size: 12px;
-    margin-bottom: 8px;
-    color: var(--text-normal);
-  }
+	&--collapsed {
+		min-width: auto;
+		width: auto;
+		height: auto;
+		padding: 6px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
 
-  &__list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+	&__collapsed-button {
+		background: transparent;
+		border: none;
+		width: 24px;
+		height: 24px;
+		cursor: pointer;
+		box-shadow: none;
+		padding: 0;
+	}
 
-  &__item {
-    font-size: 12px;
-    //height: 16px;
-    padding: 4px 8px;
-    //background: var(--background-secondary);
-    border-radius: 4px;
-    color: var(--text-normal);
-    transition: background-color 0.2s ease;
+	&__close-button {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		width: 24px;
+		height: 24px;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		font-size: 14px;
+		z-index: 10;
+		padding: 4px;
+		line-height: 1;
+		box-shadow: none;
+		color: var(
+			--text-muted
+		); /* Added from previous context, though not explicitly in last inline style block but good practice */
+	}
 
-    &:hover {
-      background: var(--background-modifier-hover);
-    }
+	&__title {
+		font-weight: 600;
+		font-size: 12px;
+		margin-bottom: 8px;
+		color: var(--text-normal);
+		padding-right: 20px;
+	}
 
-    &--highlighted {
-      background: var(--background-modifier-active-hover);
-      font-weight: 600;
-    }
-  }
+	&__list {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
 
-  &__add-button {
-    margin-top: 8px;
-    padding: 6px 12px;
-    cursor: pointer;
-    background-color: var(--interactive-normal);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-    color: var(--text-normal);
-    text-align: center;
-    font-size: 12px;
-    font-weight: 800;
-    transition: all 0.2s ease;
+	&__item {
+		font-size: 12px;
+		//height: 16px;
+		padding: 4px 8px;
+		//background: var(--background-secondary);
+		border-radius: 4px;
+		color: var(--text-normal);
+		transition: background-color 0.2s ease;
+		border-left: 4px solid transparent; /* default */
+		cursor: pointer;
+		position: relative; /* For absolute positioning of action button */
 
-    &:hover {
-      background-color: var(--interactive-hover);
-      border-color: var(--background-modifier-border-hover);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transform: translateY(-1px);
-    }
+		&:hover {
+			background: var(--background-modifier-hover);
+		}
 
-    &:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-  }
+		&--highlighted {
+			background: var(--background-modifier-active-hover);
+			font-weight: 600;
+			/* border-left color is handled inline due to dynamic color */
+		}
+	}
 
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+	&__action-button {
+		background: transparent;
+		border: none;
+		height: 16px;
+		font-size: 12px;
+		cursor: pointer;
+		padding: 0 6px;
+		color: #888;
+		box-shadow: none;
+		border-radius: 8px;
+		position: absolute;
+		right: 18px;
+		top: 50%;
+		transform: translateY(-50%);
 
-  &__form-title {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: var(--text-normal);
-  }
+		&:hover {
+			background-color: var(--background-modifier-hover);
+			color: var(--text-normal);
+		}
+	}
 
-  &__form-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+	&__file-list {
+		margin-top: 4px;
+		background-color: var(--background-primary);
+		border-radius: 4px;
+		border: 1px solid var(--background-modifier-border);
+	}
 
-    label {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
+	&__file-item {
+		padding: 4px 8px;
+		cursor: pointer;
+		border-top: 1px solid var(--background-modifier-border);
+		font-weight: normal;
 
-    input, select {
-      padding: 4px 8px;
-      border-radius: 4px;
-      border: 1px solid var(--background-modifier-border);
-      background: var(--background-primary);
-      color: var(--text-normal);
-      font-size: 12px;
+		&:first-child {
+			border-top: none;
+		}
 
-      &:focus {
-        border-color: var(--interactive-accent);
-        outline: none;
-      }
-    }
-  }
+		&:hover {
+			background-color: var(--background-modifier-hover);
+		}
+	}
 
-  &__form-divider {
-    height: 1px;
-    background: var(--background-modifier-border);
-    margin: 4px 0;
-  }
+	&__add-button {
+		margin-top: 8px;
+		padding: 6px 12px;
+		cursor: pointer;
+		background-color: var(--interactive-normal);
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 4px;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+		color: var(--text-normal);
+		text-align: center;
+		font-size: 12px;
+		font-weight: 800;
+		transition: all 0.2s ease;
 
-  &__form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 8px;
+		&:hover {
+			background-color: var(--interactive-hover);
+			border-color: var(--background-modifier-border-hover);
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			transform: translateY(-1px);
+		}
 
-    button {
-      padding: 4px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      border: 1px solid var(--background-modifier-border);
-      background: var(--interactive-normal);
-      color: var(--text-normal);
+		&:active {
+			transform: translateY(0);
+			box-shadow: none;
+		}
+	}
 
-      &.primary {
-        background: var(--interactive-accent);
-        color: var(--text-on-accent);
-        border-color: var(--interactive-accent);
-      }
+	&__form {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
 
-      &:hover {
-        opacity: 0.9;
-      }
-    }
-  }
+	&__form-title {
+		font-size: 14px;
+		font-weight: 600;
+		margin-bottom: 4px;
+		color: var(--text-normal);
+	}
+
+	&__form-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+
+		label {
+			font-size: 11px;
+			color: var(--text-muted);
+			font-weight: 500;
+		}
+
+		input,
+		select {
+			padding: 4px 8px;
+			border-radius: 4px;
+			border: 1px solid var(--background-modifier-border);
+			background: var(--background-primary);
+			color: var(--text-normal);
+			font-size: 12px;
+
+			&:focus {
+				border-color: var(--interactive-accent);
+				outline: none;
+			}
+		}
+	}
+
+	&__form-divider {
+		height: 1px;
+		background: var(--background-modifier-border);
+		margin: 4px 0;
+	}
+
+	&__form-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		margin-top: 8px;
+
+		button {
+			padding: 4px 12px;
+			border-radius: 4px;
+			font-size: 12px;
+			cursor: pointer;
+			border: 1px solid var(--background-modifier-border);
+			background: var(--interactive-normal);
+			color: var(--text-normal);
+
+			&.primary {
+				background: var(--interactive-accent);
+				color: var(--text-on-accent);
+				border-color: var(--interactive-accent);
+			}
+
+			&:hover {
+				opacity: 0.9;
+			}
+		}
+	}
 }

@@ -11,6 +11,6 @@ export const SmallCrossIcon = (props: any) => (
         width={12}
         {...props}
     >
-        <path d="M60 260L260 60M260 260L60 60" stroke="#444444" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M60 260L260 60M260 260L60 60" stroke="#444444" strokeWidth="80" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
 );
