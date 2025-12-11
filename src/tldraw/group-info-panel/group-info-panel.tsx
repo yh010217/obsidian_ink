@@ -41,6 +41,9 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
             tlEditor = props.getTlEditor()!;
             if (!tlEditor) return;
 
+            // TODO : panel에서 
+            tlEditor.selectNone();
+
             // Selection 변경 감지
             removeListener = tlEditor.store.listen(
                 (entry) => {
