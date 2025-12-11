@@ -8,6 +8,7 @@ import {
     getLinkableGroupInfo,
     getShapesByLinkableGroup, highlightOn, TLColor, allHighlightOff, selectionCheck, LinkableFileEntry,
     openFile,
+    getPageLinkableGroups,
 } from "src/utils/tldraw-linkable-helpers";
 import {useAtomValue} from "jotai";
 import InkPlugin, {inkPluginAtom} from "../../main";
@@ -78,8 +79,11 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         console.log(selectedShapeIds);
 
         if (selectedShapeIds.length === 0) {
-            setSelectedGroups([]);
+            // 선택된 쉐이프가 없으면 모든 그룹 표시
+            const allPageGroups = getPageLinkableGroups(editor);
+            setSelectedGroups(Object.keys(allPageGroups));
             return;
+
         }
 
         // 모든 선택된 shape의 그룹 수집
