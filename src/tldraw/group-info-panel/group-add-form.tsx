@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Editor } from "@tldraw/tldraw";
+import { addNewLinkableGroup } from "../../utils/tldraw-linkable-helpers";
 
 interface GroupAddFormProps {
     getTlEditor: () => Editor | undefined;
@@ -30,7 +31,18 @@ export const GroupAddForm = (props: GroupAddFormProps) => {
         if (editor) {
             const selectedShapeIds = editor.getSelectedShapeIds();
             console.log("Selected shapes:", selectedShapeIds);
-            // TODO: Implement actual group creation logic here
+            
+            addNewLinkableGroup(
+                editor,
+                formData.groupName,
+                formData.groupColor,
+                {
+                    name: formData.fileName,
+                    path: formData.filePath,
+                    line: Number(formData.fileLine)
+                },
+                selectedShapeIds
+            );
         }
         
         // Reset form and close

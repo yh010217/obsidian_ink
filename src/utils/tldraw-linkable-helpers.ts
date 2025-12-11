@@ -217,3 +217,69 @@ export async function openFile(linkableFile: LinkableFileEntry, file: TFile,leaf
         console.error("파일을 여는 중 오류 발생:", error);
     }
 }
+
+
+export function addNewLinkableGroup(
+    editor: Editor,
+    groupName: string,
+    color: string,
+    fileData: { name?: string; path: string; line?: number },
+    selectedShapeIds: TLShapeId[]
+) {
+    // 간단한 ID 생성
+    const groupId = 'group_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    
+    const newGroup: LinkableGroup = {
+        id: groupId,
+        name: groupName,
+        color: color,
+        createdAt: new Date().toISOString(),
+        link_files: []
+    };
+
+    if (fileData.path) {
+        newGroup.link_files?.push({
+            name: fileData.name || fileData.path.split('/').pop() || 'Untitled',
+            path: fileData.path,
+            line: fileData.line
+        });
+    }
+
+    editor.run(() => {
+        // 1. Update Page Meta
+        const currentPageId = editor.getCurrentPageId();
+        const page = editor.store.get(currentPageId);
+        if (page && page.typeName === 'page') {
+             const currentGroups = (page.meta?.linkableGroups as PageLinkableGroups) || {};
+             editor.updatePage({
+                 id: currentPageId,
+                 meta: {
+                     ...page.meta,
+                     linkableGroups: {
+                         ...currentGroups,
+                         [groupId]: newGroup
+                     }
+                 }
+             });
+        }
+
+        // 2. Update Shape Meta
+        selectedShapeIds.forEach(id => {
+            const shape = editor.getShape(id);
+            if (!shape) return;
+            const currentLinkableGroups = (shape.meta?.linkableGroups as string[]) || [];
+            
+            // 이미 존재하지 않는 경우에만 추가
+            if (!currentLinkableGroups.includes(groupId)) {
+                editor.updateShape({
+                    id,
+                    type: shape.type,
+                    meta: {
+                        ...shape.meta,
+                        linkableGroups: [...currentLinkableGroups, groupId]
+                    }
+                });
+            }
+        });
+    });
+}
