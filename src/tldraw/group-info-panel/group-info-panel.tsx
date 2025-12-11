@@ -47,6 +47,8 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
             // Selection 변경 감지
             removeListener = tlEditor.store.listen(
                 (entry) => {
+                    // Changes 정보가 없으면 무시
+                    if (!entry.changes) return;
                     updateSelectedGroups(tlEditor);
                 },
                 {
@@ -58,7 +60,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
             props.groupUnmountRef.current = setTimeout(() => {
                 allHighlightOff(tlEditor);
                 disposeCloneSync.current?.();
-                removeListener?.();
             }, mountDelayMs);
 
             // 초기 상태 업데이트
@@ -66,6 +67,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         }, mountDelayMs);
 
         return () => {
+            removeListener?.();
             clearTimeout(timeoutId);
         };
     }, []);
