@@ -12,7 +12,7 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
     const [formData, setFormData] = React.useState({
         fileName: "",
         filePath: "",
-        fileLine: 1
+        fileLine: ""
     });
 
     function handleFormChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -31,9 +31,9 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
                 editor,
                 props.groupId,
                 {
-                    name: formData.fileName,
+                    name: formData.fileName ? formData.fileName : formData.filePath.split('/').pop() || 'Untitled',
                     path: formData.filePath,
-                    line: Number(formData.fileLine)
+                    line: formData.fileLine ? Number(formData.fileLine) : 1
                 }
             );
         }
@@ -41,7 +41,7 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
         setFormData({
             fileName: "",
             filePath: "",
-            fileLine: 1
+            fileLine: ""
         });
         props.onClose();
     }
@@ -81,12 +81,11 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
             <div className="ink_group-info-panel__form-field">
                 <label>라인 번호 (선택)</label>
                 <input 
-                    type="number" 
+                    type="text" 
                     name="fileLine" 
                     value={formData.fileLine} 
                     onChange={handleFormChange} 
-                    min="1"
-                    placeholder="1"
+                    placeholder="입력 없으면 첫 줄로 이동합니다."
                 />
             </div>
 
