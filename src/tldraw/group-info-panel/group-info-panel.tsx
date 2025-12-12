@@ -24,6 +24,7 @@ interface GroupInfoPanelProps {
 }
 
 export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
+    const [previousSelection, setPreviousSelection] = React.useState<TLShapeId[]>([]);
     const [isSelectionExist, setIsSelectionExist] = React.useState(false);
     const [selectedGroups, setSelectedGroups] = React.useState<string[]>([]);
     const [highlightedGroup, setHighlightedGroup] = React.useState<string | null>(null);
@@ -112,7 +113,19 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         // 같은 그룹이면 하이라이트 제거
         if (highlightedGroup === groupId) {
             setHighlightedGroup(null);
+
+            // 이전 선택 상태 복원
+            if (previousSelection.length > 0) {
+                editor.setSelectedShapes(previousSelection);
+                setPreviousSelection([]);
+            }
             return;
+        }
+
+        // 새로운 그룹 선택 시, 현재 하이라이트 중이 아닐 때만 현재 선택 상태 저장
+        // (그룹 간 전환 시에는 최초 선택 상태 유지를 위해 덮어쓰지 않음)
+        if (highlightedGroup === null) {
+            setPreviousSelection(editor.getSelectedShapeIds());
         }
 
         setHighlightedGroup(groupId);
@@ -128,10 +141,10 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
             const cloneIds = highlightOn(editor, shapeIds, color);
             disposeCloneSync.current = selectionCheck(editor, shapeIds, () => {
                 setHighlightedGroup(null);
+                setPreviousSelection([]); // 외부 요인으로 선택 해제 시 저장된 선택 상태 초기화
             });
         }
     }
-
 
     function getGroupInfo(groupId: string) {
         const editor = props.getTlEditor();
