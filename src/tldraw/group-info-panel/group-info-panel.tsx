@@ -23,10 +23,12 @@ interface GroupInfoPanelProps {
 }
 
 export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
+    const [isSelectionExist, setIsSelectionExist] = React.useState(false);
     const [selectedGroups, setSelectedGroups] = React.useState<string[]>([]);
     const [highlightedGroup, setHighlightedGroup] = React.useState<string | null>(null);
     const [openFileListGroupId, setOpenFileListGroupId] = React.useState<string | null>(null);
     const [isCollapsed, setIsCollapsed] = React.useState(false);
+    const [isAddFormOpen, setIsAddFormOpen] = React.useState(false);
 
     // const canvasContainerRef = React.useRef<HTMLDivElement>(null);
     let disposeCloneSync: React.MutableRefObject<(() => void) | undefined> = React.useRef<() => void>();
@@ -74,17 +76,20 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
     }, []);
 
     function updateSelectedGroups(editor: Editor) {
+        setIsAddFormOpen(false);
         const selectedShapeIds = editor.getSelectedShapeIds();
 
         console.log(selectedShapeIds);
 
         if (selectedShapeIds.length === 0) {
             // 선택된 쉐이프가 없으면 모든 그룹 표시
+            setIsSelectionExist(false);
             const allPageGroups = getPageLinkableGroups(editor);
             setSelectedGroups(Object.keys(allPageGroups));
             return;
-
         }
+
+        setIsSelectionExist(true);
 
         // 모든 선택된 shape의 그룹 수집
         const allGroups = new Set<string>();
@@ -133,7 +138,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         return getLinkableGroupInfo(editor, groupId);
     }
 
-    const [isAddFormOpen, setIsAddFormOpen] = React.useState(false);
 
     function handleAddClick(e: React.MouseEvent) {
         e.stopPropagation();
@@ -206,7 +210,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                             : ""
                                     }`}
                                     style={{
-                                        borderLeft: isHighlighted ? `4px solid ${color}` : '4px solid transparent',
+                                        borderLeft: `4px solid ${color}`,
                                     }}
                                     onClick={() => handleGroupClick(groupId)}
                                 >
@@ -240,12 +244,14 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                         })}
                     </div>
                     
-                    <div
-                        className="ink_group-info-panel__add-button"
-                        onClick={(e) => handleAddClick(e)}
-                    >
-                        추가하기
-                    </div>
+                    {isSelectionExist && (
+                        <div
+                            className="ink_group-info-panel__add-button"
+                            onClick={(e) => handleAddClick(e)}
+                        >
+                            추가하기
+                        </div>
+                    )}
                 </>
             )}
         </div>
