@@ -1,11 +1,14 @@
 import * as React from "react";
 import { Editor } from "@tldraw/tldraw";
 import { addFileToGroup } from "../../utils/tldraw-linkable-helpers";
+import InkPlugin from "../../main";
+import { TFile } from "obsidian";
 
 interface GroupAddLinkFormProps {
     getTlEditor: () => Editor | undefined;
     groupId: string;
     onClose: () => void;
+    plugin: InkPlugin;
 }
 
 export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
@@ -14,6 +17,8 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
         filePath: "",
         fileLine: ""
     });
+    const [suggestions, setSuggestions] = React.useState<TFile[]>([]);
+    const [showSuggestions, setShowSuggestions] = React.useState(false);
 
     function handleFormChange(e: React.ChangeEvent<HTMLInputElement>) {
         const { name, value } = e.target;
@@ -21,6 +26,31 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
             ...prev,
             [name]: value
         }));
+
+        if (name === "filePath") {
+            if (value.trim().length > 0) {
+                const files = props.plugin.app.vault.getFiles();
+                const matchedFiles = files.filter(file => 
+                    file.path.toLowerCase().includes(value.toLowerCase())
+                ).slice(0, 10); // Limit to 10 suggestions
+                
+                setSuggestions(matchedFiles);
+                setShowSuggestions(true);
+            } else {
+                setSuggestions([]);
+                setShowSuggestions(false);
+            }
+        }
+    }
+
+    function handleSuggestionClick(file: TFile) {
+        setFormData(prev => ({
+            ...prev,
+            filePath: file.path,
+            fileName: prev.fileName ? prev.fileName : file.basename
+        }));
+        setSuggestions([]);
+        setShowSuggestions(false);
     }
 
     function handleFormSubmit(e: React.FormEvent) {
@@ -51,6 +81,9 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
         props.onClose();
     }
 
+    // Close suggestions when clicking outside might be needed, 
+    // but for now relying on selection or empty input is okay for a simple version.
+
     return (
         <form className="ink_group-info-panel__form" onSubmit={handleFormSubmit}>
             <div className="ink_group-info-panel__form-title">파일 추가</div>
@@ -65,8 +98,8 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
                     placeholder="표시할 파일 이름"
                 />
             </div>
-
-            <div className="ink_group-info-panel__form-field">
+            
+            <div className="ink_group-info-panel__form-field" style={{position: 'relative'}}>
                 <label>파일 경로</label>
                 <input 
                     type="text" 
@@ -75,7 +108,21 @@ export const GroupAddLinkForm = (props: GroupAddLinkFormProps) => {
                     onChange={handleFormChange} 
                     placeholder="vault/path/to/file.md"
                     required
+                    autoComplete="off"
                 />
+                {showSuggestions && suggestions.length > 0 && (
+                    <div className="ink_group-info-panel__suggestions">
+                        {suggestions.map((file) => (
+                            <div 
+                                key={file.path} 
+                                className="ink_group-info-panel__suggestion-item"
+                                onClick={() => handleSuggestionClick(file)}
+                            >
+                                {file.path}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="ink_group-info-panel__form-field">

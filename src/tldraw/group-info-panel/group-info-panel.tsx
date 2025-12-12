@@ -193,6 +193,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                     getTlEditor={props.getTlEditor}
                     groupId={addingFileToGroupId}
                     onClose={() => setAddingFileToGroupId(null)}
+                    plugin={props.plugin}
                 />
             ) : (
                 <>

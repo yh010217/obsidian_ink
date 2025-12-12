@@ -240,4 +240,33 @@
 			}
 		}
 	}
+
+	&__suggestions {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		background: var(--background-primary);
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 4px;
+		max-height: 150px;
+		overflow-y: auto;
+		z-index: 100;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		margin-top: 4px;
+	}
+
+	&__suggestion-item {
+		padding: 6px 8px;
+		font-size: 11px;
+		cursor: pointer;
+		color: var(--text-normal);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+
+		&:hover {
+			background-color: var(--background-modifier-hover);
+		}
+	}
 }
