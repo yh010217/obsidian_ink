@@ -1,4 +1,4 @@
-import { createShapeId, Editor, TLEventMapHandler, TLShapeId, TLUnknownShape, } from "@tldraw/tldraw";
+import { createShapeId, Editor, TLShapeId, TLUnknownShape, } from "@tldraw/tldraw";
 import { MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
 
 
@@ -219,11 +219,10 @@ export async function openFile(linkableFile: LinkableFileEntry, file: TFile,leaf
 }
 
 
-export function addNewLinkableGroup(
+export function addNewLinkableGroupWithoutFile(
     editor: Editor,
     groupName: string,
     color: string,
-    fileData: { name?: string; path: string; line?: number },
     selectedShapeIds: TLShapeId[]
 ) {
     // 간단한 ID 생성
@@ -236,14 +235,6 @@ export function addNewLinkableGroup(
         createdAt: new Date().toISOString(),
         link_files: []
     };
-
-    if (fileData.path) {
-        newGroup.link_files?.push({
-            name: fileData.name || fileData.path.split('/').pop() || 'Untitled',
-            path: fileData.path,
-            line: fileData.line
-        });
-    }
 
     editor.run(() => {
         // 1. Update Page Meta
@@ -281,5 +272,45 @@ export function addNewLinkableGroup(
                 });
             }
         });
+    });
+}
+
+export function addFileToGroup(
+    editor: Editor,
+    groupId: string,
+    fileData: { name?: string; path: string; line?: number }
+) {
+    const linkFile: LinkableFileEntry = {
+        name: fileData.name || fileData.path.split('/').pop() || 'Untitled',
+        path: fileData.path,
+        line: fileData.line
+    };
+
+    editor.run(() => {
+        // 1. Update Page Meta
+        const currentPageId = editor.getCurrentPageId();
+        const page = editor.store.get(currentPageId);
+        if (page && page.typeName === 'page') {
+             const currentGroups = (page.meta?.linkableGroups as PageLinkableGroups) || {};
+             const targetGroup = currentGroups[groupId];
+             
+             if (targetGroup) {
+                 const newGroupData = {
+                     ...targetGroup,
+                     link_files: [...(targetGroup.link_files || []), linkFile]
+                 };
+
+                 editor.updatePage({
+                     id: currentPageId,
+                     meta: {
+                         ...page.meta,
+                         linkableGroups: {
+                             ...currentGroups,
+                             [groupId]: newGroupData
+                         }
+                     }
+                 });
+             }
+        }
     });
 }

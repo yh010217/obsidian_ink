@@ -13,6 +13,7 @@ import {
 import {useAtomValue} from "jotai";
 import InkPlugin, {inkPluginAtom} from "../../main";
 import { GroupAddForm } from "./group-add-form";
+import { GroupAddLinkForm } from "./group-add-link-form";
 import { GroupListIcon } from "src/graphics/icons/group-list-icon";
 import { SmallCrossIcon } from "src/graphics/icons/small-cross-icon";
 
@@ -27,13 +28,12 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
     const [selectedGroups, setSelectedGroups] = React.useState<string[]>([]);
     const [highlightedGroup, setHighlightedGroup] = React.useState<string | null>(null);
     const [openFileListGroupId, setOpenFileListGroupId] = React.useState<string | null>(null);
+    const [addingFileToGroupId, setAddingFileToGroupId] = React.useState<string | null>(null);
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [isAddFormOpen, setIsAddFormOpen] = React.useState(false);
 
     // const canvasContainerRef = React.useRef<HTMLDivElement>(null);
     let disposeCloneSync: React.MutableRefObject<(() => void) | undefined> = React.useRef<() => void>();
-
-
 
     React.useEffect(() => {
         let tlEditor: Editor;
@@ -77,6 +77,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 
     function updateSelectedGroups(editor: Editor) {
         setIsAddFormOpen(false);
+        setAddingFileToGroupId(null);
         const selectedShapeIds = editor.getSelectedShapeIds();
 
         console.log(selectedShapeIds);
@@ -148,8 +149,12 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         e.stopPropagation();
         const editor = props.getTlEditor();
         if (!editor) return;
-        const groupInfo = getLinkableGroupInfo(editor, groupId);
         setOpenFileListGroupId(prev => prev === groupId ? null : groupId);
+    }
+
+    function handleAddFileClick(e: React.MouseEvent, groupId: string) {
+        e.stopPropagation();
+        setAddingFileToGroupId(groupId);
     }
 
     async function handleOpenFile(linkableFile: LinkableFileEntry, e: React.MouseEvent) {
@@ -182,6 +187,12 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                 <GroupAddForm 
                     getTlEditor={props.getTlEditor} 
                     onClose={() => setIsAddFormOpen(false)} 
+                />
+            ) : addingFileToGroupId ? (
+                <GroupAddLinkForm
+                    getTlEditor={props.getTlEditor}
+                    groupId={addingFileToGroupId}
+                    onClose={() => setAddingFileToGroupId(null)}
                 />
             ) : (
                 <>
@@ -216,14 +227,23 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                 >
                                     {groupInfo?.name || groupId}
                                     {isHighlighted && (
-                                        <button
-                                            className="ink_group-info-panel__action-button"
-                                            onClick={(e) => {
-                                                handleActionClick(e, groupId);
-                                            }}
-                                        >
-                                            ⋮
-                                        </button>
+                                        <div className="ink_group-info-panel__item-actions">
+                                            <button
+                                                className="ink_group-info-panel__action-button"
+                                                onClick={(e) => handleAddFileClick(e, groupId)}
+                                                title="파일 추가"
+                                            >
+                                                +
+                                            </button>
+                                            <button
+                                                className="ink_group-info-panel__action-button"
+                                                onClick={(e) => {
+                                                    handleActionClick(e, groupId);
+                                                }}
+                                            >
+                                                ⋮
+                                            </button>
+                                        </div>
                                     )}
 
                                     {isHighlighted && openFileListGroupId === groupId && (

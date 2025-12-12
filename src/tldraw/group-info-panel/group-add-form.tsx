@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Editor } from "@tldraw/tldraw";
-import { addNewLinkableGroup } from "../../utils/tldraw-linkable-helpers";
+import { addNewLinkableGroupWithoutFile } from "../../utils/tldraw-linkable-helpers";
 
 interface GroupAddFormProps {
     getTlEditor: () => Editor | undefined;
@@ -10,10 +10,7 @@ interface GroupAddFormProps {
 export const GroupAddForm = (props: GroupAddFormProps) => {
     const [formData, setFormData] = React.useState({
         groupName: "",
-        groupColor: "red",
-        fileName: "",
-        filePath: "",
-        fileLine: 1
+        groupColor: "red"
     });
 
     function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -32,15 +29,10 @@ export const GroupAddForm = (props: GroupAddFormProps) => {
             const selectedShapeIds = editor.getSelectedShapeIds();
             console.log("Selected shapes:", selectedShapeIds);
             
-            addNewLinkableGroup(
+            addNewLinkableGroupWithoutFile(
                 editor,
                 formData.groupName,
                 formData.groupColor,
-                {
-                    name: formData.fileName,
-                    path: formData.filePath,
-                    line: Number(formData.fileLine)
-                },
                 selectedShapeIds
             );
         }
@@ -48,10 +40,7 @@ export const GroupAddForm = (props: GroupAddFormProps) => {
         // Reset form and close
         setFormData({
             groupName: "",
-            groupColor: "red",
-            fileName: "",
-            filePath: "",
-            fileLine: 1
+            groupColor: "red"
         });
         props.onClose();
     }
@@ -95,41 +84,6 @@ export const GroupAddForm = (props: GroupAddFormProps) => {
             </div>
 
             <div className="ink_group-info-panel__form-divider" />
-
-            <div className="ink_group-info-panel__form-field">
-                <label>파일 이름 (선택)</label>
-                <input 
-                    type="text" 
-                    name="fileName" 
-                    value={formData.fileName} 
-                    onChange={handleFormChange} 
-                    placeholder="표시할 파일 이름"
-                />
-            </div>
-
-            <div className="ink_group-info-panel__form-field">
-                <label>파일 경로</label>
-                <input 
-                    type="text" 
-                    name="filePath" 
-                    value={formData.filePath} 
-                    onChange={handleFormChange} 
-                    placeholder="vault/path/to/file.md"
-                    required
-                />
-            </div>
-
-            <div className="ink_group-info-panel__form-field">
-                <label>라인 번호 (선택)</label>
-                <input 
-                    type="number" 
-                    name="fileLine" 
-                    value={formData.fileLine} 
-                    onChange={handleFormChange} 
-                    min="1"
-                    placeholder="1"
-                />
-            </div>
 
             <div className="ink_group-info-panel__form-actions">
                 <button type="button" onClick={handleFormCancel}>취소</button>
