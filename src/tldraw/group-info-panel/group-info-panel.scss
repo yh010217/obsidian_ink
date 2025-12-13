@@ -111,6 +111,22 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 	}
 
+	&__item-action {
+		border: none;
+		background: none;
+		cursor: pointer;
+		font-size: 0.8em;
+		padding: 2px 6px;
+		margin-left: 4px;
+		box-shadow: none;
+		height: 24px;
+		opacity: 0.6;
+
+		&:hover {
+			opacity: 1;
+		}
+	}
+
 	&__file-item {
 		padding: 4px 8px;
 		border-radius: 4px;

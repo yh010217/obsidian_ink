@@ -6,11 +6,11 @@ import { MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
 export type TLColor = 'black' | 'blue' | 'green' | 'red' | 'yellow' | 'violet' | 'grey'
 
 export type LinkableFileEntry = {
+    id: string;           // 고유 ID
     name: string;         // UI용 표시 이름
     path: string;         // Obsidian Vault 내 상대 경로
     line?: number;        // 이동하려는 line 번호 (optional)
 };
-
 
 type LinkableGroup = {
     id: string;
@@ -306,7 +306,11 @@ export function addFileToGroup(
     groupId: string,
     fileData: { name?: string; path: string; line?: number }
 ) {
+    // 랜덤 ID 생성
+    const fileId = 'file_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
     const linkFile: LinkableFileEntry = {
+        id: fileId,
         name: fileData.name || fileData.path.split('/').pop() || 'Untitled',
         path: fileData.path,
         line: fileData.line
@@ -338,5 +342,61 @@ export function addFileToGroup(
                  });
              }
         }
+    });
+}
+
+export function updateFileInGroup(
+    editor: Editor,
+    groupId: string,
+    fileId: string,
+    updatedData: { name?: string; path?: string; line?: number }
+) {
+    editor.run(() => {
+        const currentPageId = editor.getCurrentPageId();
+        const page = editor.store.get(currentPageId);
+        if (page && page.typeName === 'page') {
+            const currentGroups = (page.meta?.linkableGroups as PageLinkableGroups) || {};
+            const targetGroup = currentGroups[groupId];
+
+            if (targetGroup && targetGroup.link_files) {
+                const updatedFiles = targetGroup.link_files.map(file => {
+                    if (file.id === fileId) {
+                        return { ...file, ...updatedData };
+                    }
+                    return file;
+                });
+
+                const newGroupData = {
+                    ...targetGroup,
+                    link_files: updatedFiles
+                };
+
+                editor.updatePage({
+                    id: currentPageId,
+                    meta: {
+                        ...page.meta,
+                        linkableGroups: {
+                            ...currentGroups,
+                            [groupId]: newGroupData
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
+
+export function checkDuplicateFile(
+    editor: Editor,
+    groupId: string,
+    fileData: { name: string; path: string },
+    excludeFileId?: string
+): boolean {
+    const groupInfo = getLinkableGroupInfo(editor, groupId);
+    if (!groupInfo || !groupInfo.link_files) return false;
+
+    return groupInfo.link_files.some(file => {
+        if (excludeFileId && file.id === excludeFileId) return false;
+        return file.name === fileData.name && file.path === fileData.path;
     });
 }

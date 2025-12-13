@@ -13,6 +13,7 @@ import {
 	selectionCheck,
 	getPageLinkableGroups,
 	getGroupsFromShapeIds,
+	LinkableFileEntry,
 } from "src/utils/tldraw-linkable-helpers";
 import InkPlugin from "../../main";
 import { GroupAddForm } from "./group-add-form";
@@ -39,6 +40,11 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 	const [addingFileToGroupId, setAddingFileToGroupId] = React.useState<
 		string | null
 	>(null);
+	const [editingFile, setEditingFile] = React.useState<{
+		groupId: string;
+		file: LinkableFileEntry;
+	} | null>(null);
+
 	const [isCollapsed, setIsCollapsed] = React.useState(false);
 	const [isAddFormOpen, setIsAddFormOpen] = React.useState(false);
 
@@ -129,6 +135,8 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 	function updateSelectedGroups(editor: Editor) {
 		setIsAddFormOpen(false);
 		setAddingFileToGroupId(null);
+		setEditingFile(null); // Reset edit state on selection change
+
 		const selectedShapeIds = editor.getSelectedShapeIds();
 
 		console.log(selectedShapeIds);
@@ -204,6 +212,10 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 		setIsAddFormOpen(true);
 	}
 
+	function handleEditFile(groupId: string, file: LinkableFileEntry) {
+		setEditingFile({ groupId, file });
+	}
+
 	if (isCollapsed) {
 		return (
 			<div
@@ -240,6 +252,14 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 					onClose={() => setAddingFileToGroupId(null)}
 					plugin={props.plugin}
 				/>
+			) : editingFile ? (
+				<GroupAddLinkForm
+					getTlEditor={props.getTlEditor}
+					groupId={editingFile.groupId}
+					initialData={editingFile.file}
+					onClose={() => setEditingFile(null)}
+					plugin={props.plugin}
+				/>
 			) : (
 				<>
 					<button
@@ -270,6 +290,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 									setAddingFileToGroupId={
 										setAddingFileToGroupId
 									}
+									onEditFile={handleEditFile}
 								/>
 							);
 						})}
