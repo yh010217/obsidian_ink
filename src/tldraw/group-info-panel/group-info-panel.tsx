@@ -114,6 +114,9 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         if (highlightedGroup === groupId) {
             setHighlightedGroup(null);
 
+            if(previousSelection.length == 0) {
+                editor.selectNone();
+            }
             // 이전 선택 상태 복원
             if (previousSelection.length > 0) {
                 editor.setSelectedShapes(previousSelection);
