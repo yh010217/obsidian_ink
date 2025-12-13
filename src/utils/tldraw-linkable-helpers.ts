@@ -53,6 +53,25 @@ export function getShapesByLinkableGroup(
 }
 
 /**
+ * 선택된 shape들의 모든 linkableGroup ID를 가져옵니다.
+ * 중복된 ID는 제거되고 정렬되어 반환됩니다.
+ * 
+ * @param editor - tldraw editor 인스턴스
+ * @returns 정렬된 unique한 group ID 배열
+ */
+export function getGroupsFromSelection(editor: Editor): string[] {
+    const selectedShapeIds = editor.getSelectedShapeIds();
+    const allGroups = new Set<string>();
+    
+    selectedShapeIds.forEach((shapeId: TLShapeId) => {
+        const groups = getLinkableGroups(editor, shapeId);
+        groups.forEach((group) => allGroups.add(group));
+    });
+    
+    return Array.from(allGroups).sort();
+}
+
+/**
  * 현재 페이지의 모든 linkableGroups를 가져옵니다
  */
 export function getPageLinkableGroups(editor: Editor): PageLinkableGroups {

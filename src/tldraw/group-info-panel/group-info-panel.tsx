@@ -9,6 +9,7 @@ import {
     getShapesByLinkableGroup, highlightOn, TLColor, allHighlightOff, selectionCheck, LinkableFileEntry,
     openFile,
     getPageLinkableGroups,
+    getGroupsFromSelection,
 } from "src/utils/tldraw-linkable-helpers";
 import {useAtomValue} from "jotai";
 import InkPlugin, {inkPluginAtom} from "../../main";
@@ -16,6 +17,7 @@ import { GroupAddForm } from "./group-add-form";
 import { GroupAddLinkForm } from "./group-add-link-form";
 import { GroupListIcon } from "src/graphics/icons/group-list-icon";
 import { SmallCrossIcon } from "src/graphics/icons/small-cross-icon";
+import { GroupInfoItem } from "./components/group-info-item";
 
 interface GroupInfoPanelProps {
     getTlEditor: () => Editor | undefined;
@@ -93,14 +95,8 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 
         setIsSelectionExist(true);
 
-        // 모든 선택된 shape의 그룹 수집
-        const allGroups = new Set<string>();
-        selectedShapeIds.forEach((shapeId: TLShapeId) => {
-            const groups = getLinkableGroups(editor, shapeId);
-            groups.forEach((group) => allGroups.add(group));
-        });
-
-        setSelectedGroups(Array.from(allGroups).sort());
+        const groups = getGroupsFromSelection(editor);
+        setSelectedGroups(groups);
     }
 
     function handleGroupClick(groupId: string) {
@@ -230,53 +226,19 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                             const color = groupInfo?.color || "#FF0000";
 
                             return (
-                                <div
+                                <GroupInfoItem
                                     key={groupId}
-                                    className={`ink_group-info-panel__item ${
-                                        isHighlighted
-                                            ? "ink_group-info-panel__item--highlighted"
-                                            : ""
-                                    }`}
-                                    style={{
-                                        borderLeft: `4px solid ${color}`,
-                                    }}
-                                    onClick={() => handleGroupClick(groupId)}
-                                >
-                                    {groupInfo?.name || groupId}
-                                    {isHighlighted && (
-                                        <div className="ink_group-info-panel__item-actions">
-                                            <button
-                                                className="ink_group-info-panel__action-button"
-                                                onClick={(e) => handleAddFileClick(e, groupId)}
-                                                title="파일 추가"
-                                            >
-                                                +
-                                            </button>
-                                            <button
-                                                className="ink_group-info-panel__action-button"
-                                                onClick={(e) => {
-                                                    handleActionClick(e, groupId);
-                                                }}
-                                            >
-                                                ⋮
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {isHighlighted && openFileListGroupId === groupId && (
-                                        <div className="ink_group-info-panel__file-list">
-                                            {(groupInfo?.link_files || []).map((filePath, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="ink_group-info-panel__file-item"
-                                                    onClick={(e) => handleOpenFile(filePath, e)}
-                                                >
-                                                    {filePath.name}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                    groupId={groupId}
+                                    groupName={groupInfo?.name || groupId}
+                                    color={color as string}
+                                    isHighlighted={isHighlighted}
+                                    openFileListGroupId={openFileListGroupId}
+                                    linkFiles={groupInfo?.link_files || []}
+                                    onGroupClick={handleGroupClick}
+                                    onAddFileClick={handleAddFileClick}
+                                    onActionClick={handleActionClick}
+                                    onOpenFile={handleOpenFile}
+                                />
                             );
                         })}
                     </div>
