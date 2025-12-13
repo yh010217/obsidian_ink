@@ -1,23 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import "./group-info-panel.scss";
 import * as React from "react";
-import { createShapeId, Editor, TLPageId, TLShapeId } from "@tldraw/tldraw";
-import { TFile, App, MarkdownView } from "obsidian";
+import { Editor, TLShapeId } from "@tldraw/tldraw";
 import {
-	getLinkableGroups,
 	getLinkableGroupInfo,
 	getShapesByLinkableGroup,
 	highlightOn,
 	TLColor,
 	allHighlightOff,
 	selectionCheck,
-	LinkableFileEntry,
-	openFile,
 	getPageLinkableGroups,
-	getGroupsFromSelection,
+	getGroupsFromShapeIds,
 } from "src/utils/tldraw-linkable-helpers";
-import { useAtomValue } from "jotai";
-import InkPlugin, { inkPluginAtom } from "../../main";
+import InkPlugin from "../../main";
 import { GroupAddForm } from "./group-add-form";
 import { GroupAddLinkForm } from "./group-add-link-form";
 import { GroupListIcon } from "src/graphics/icons/group-list-icon";
@@ -106,7 +101,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 
 		setIsSelectionExist(true);
 
-		const groups = getGroupsFromSelection(editor);
+		const groups = getGroupsFromShapeIds(editor, selectedShapeIds);
 		setSelectedGroups(groups);
 	}
 
@@ -148,7 +143,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 			// editor.setSelectedShapes(shapeIds);
 			const groupInfo = getLinkableGroupInfo(editor, groupId);
 			const color = (groupInfo?.color as TLColor) || "red";
-			const cloneIds = highlightOn(editor, shapeIds, color);
+			highlightOn(editor, shapeIds, color);
 			disposeCloneSync.current = selectionCheck(editor, shapeIds, () => {
 				setHighlightedGroup(null);
 				setPreviousSelection([]); // 외부 요인으로 선택 해제 시 저장된 선택 상태 초기화

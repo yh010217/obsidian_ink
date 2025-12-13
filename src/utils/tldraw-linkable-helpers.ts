@@ -18,6 +18,7 @@ type LinkableGroup = {
     color?: string;
     createdAt?: string;
     link_files?: LinkableFileEntry[];
+    shapeIds?: TLShapeId[];
     [key: string]: any;  // 추가 메타데이터
 };
 
@@ -43,13 +44,19 @@ export function getShapesByLinkableGroup(
     editor: Editor,
     linkableGroupId: string
 ): TLUnknownShape[] {
-
-    // TODO : all shapes의 각 shape에서 구하지 말고, groupId 로 group 내 shape 정보를 구할 수 있음.
-    const allShapes = editor.getCurrentPageShapes();
-    return allShapes.filter(shape => {
-        const linkableGroups = (shape.meta?.linkableGroups as string[]) || [];
-        return linkableGroups.includes(linkableGroupId);
-    });
+    const group = getLinkableGroupInfo(editor, linkableGroupId);
+    if (!group || !group.shapeIds) {
+        // fallback: shapeIds가 없으면 전체 스캔 (하위 호환성)
+        const allShapes = editor.getCurrentPageShapes();
+        return allShapes.filter(shape => {
+            const linkableGroups = (shape.meta?.linkableGroups as string[]) || [];
+            return linkableGroups.includes(linkableGroupId);
+        });
+    }
+    
+    return group.shapeIds
+        .map(id => editor.getShape(id))
+        .filter((shape): shape is TLUnknownShape => !!shape);
 }
 
 /**
@@ -59,16 +66,15 @@ export function getShapesByLinkableGroup(
  * @param editor - tldraw editor 인스턴스
  * @returns 정렬된 unique한 group ID 배열
  */
-export function getGroupsFromSelection(editor: Editor): string[] {
-    const selectedShapeIds = editor.getSelectedShapeIds();
-    const allGroups = new Set<string>();
+export function getGroupsFromShapeIds(editor: Editor, shapeIds: TLShapeId[]): string[] {
+    const groupSetByIds = new Set<string>();
     
-    selectedShapeIds.forEach((shapeId: TLShapeId) => {
+    shapeIds.forEach((shapeId: TLShapeId) => {
         const groups = getLinkableGroups(editor, shapeId);
-        groups.forEach((group) => allGroups.add(group));
+        groups.forEach((group) => groupSetByIds.add(group));
     });
     
-    return Array.from(allGroups).sort();
+    return Array.from(groupSetByIds).sort();
 }
 
 /**
@@ -252,7 +258,8 @@ export function addNewLinkableGroupWithoutFile(
         name: groupName,
         color: color,
         createdAt: new Date().toISOString(),
-        link_files: []
+        link_files: [],
+        shapeIds: selectedShapeIds
     };
 
     editor.run(() => {
