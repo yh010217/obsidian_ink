@@ -9,6 +9,7 @@ import {
 } from "src/utils/tldraw-linkable-helpers";
 import { SimpleEditIcon } from "src/graphics/icons/simple-edit-icon";
 import { SmallCrossIcon } from "src/graphics/icons/small-cross-icon";
+import { SimpleEraserIcon } from "src/graphics/icons/simple-eraser-icon";
 
 interface GroupInfoItemProps {
 	groupId: string;
@@ -146,7 +147,7 @@ export const GroupInfoItem = (props: GroupInfoItemProps) => {
 									}
 									title="삭제"
 								>
-									<SmallCrossIcon />
+									<SimpleEraserIcon />
 								</button>
 							</div>
 						</div>
