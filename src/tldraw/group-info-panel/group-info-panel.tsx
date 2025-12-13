@@ -156,19 +156,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         setIsAddFormOpen(true);
     }
 
-    function handleAddFileClick(e: React.MouseEvent, groupId: string) {
-        e.stopPropagation();
-        setAddingFileToGroupId(groupId);
-    }
-
-    async function handleOpenFile(linkableFile: LinkableFileEntry, e: React.MouseEvent) {
-        e.stopPropagation();
-        const file = props.plugin.app.vault.getAbstractFileByPath(linkableFile.path);
-        if(!file || !(file instanceof TFile)) return;
-        const leaf = props.plugin.app.workspace.getLeaf();
-        await openFile(linkableFile,file,leaf);
-    }
-
     if (isCollapsed) {
         return (
             <div 
@@ -228,9 +215,9 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                     color={color as string}
                                     isHighlighted={isHighlighted}
                                     linkFiles={groupInfo?.link_files || []}
+                                    plugin={props.plugin}
                                     onGroupClick={handleGroupClick}
-                                    onAddFileClick={handleAddFileClick}
-                                    onOpenFile={handleOpenFile}
+                                    setAddingFileToGroupId={setAddingFileToGroupId}
                                 />
                             );
                         })}
