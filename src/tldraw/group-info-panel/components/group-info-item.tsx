@@ -1,8 +1,14 @@
 import * as React from "react";
 import InkPlugin from "src/main";
 import { TFile } from "obsidian";
-import { openFile, LinkableFileEntry } from "src/utils/tldraw-linkable-helpers";
+import { Editor } from "@tldraw/tldraw";
+import {
+	openFile,
+	LinkableFileEntry,
+	removeFileLinkFromGroup,
+} from "src/utils/tldraw-linkable-helpers";
 import { SimpleEditIcon } from "src/graphics/icons/simple-edit-icon";
+import { SmallCrossIcon } from "src/graphics/icons/small-cross-icon";
 
 interface GroupInfoItemProps {
 	groupId: string;
@@ -15,6 +21,7 @@ interface GroupInfoItemProps {
 	setAddingFileToGroupId: (groupId: string | null) => void;
 	onEditFile: (groupId: string, file: LinkableFileEntry) => void;
 	onEditGroup: (groupId: string) => void;
+	getTlEditor: () => Editor | undefined;
 }
 
 export const GroupInfoItem = (props: GroupInfoItemProps) => {
@@ -44,6 +51,14 @@ export const GroupInfoItem = (props: GroupInfoItemProps) => {
 	function handleEditGroupClick(e: React.MouseEvent) {
 		e.stopPropagation();
 		props.onEditGroup(props.groupId);
+	}
+
+	function handleDeleteFileLinkClick(e: React.MouseEvent, fileId: string) {
+		e.stopPropagation();
+		const editor = props.getTlEditor();
+		if (editor) {
+			removeFileLinkFromGroup(editor, props.groupId, fileId);
+		}
 	}
 
 	return (
@@ -98,19 +113,42 @@ export const GroupInfoItem = (props: GroupInfoItemProps) => {
 							>
 								{linkFile.name}
 							</span>
-							<button
-								className="ink_group-info-panel__item-action"
+							<div
 								style={{
-									boxShadow: "none",
-									backgroundColor: "transparent",
+									display: "flex",
+									alignItems: "center",
 								}}
-								onClick={(e) =>
-									handleEditFileClick(e, linkFile)
-								}
-								title="수정"
 							>
-								<SimpleEditIcon />
-							</button>
+								<button
+									className="ink_group-info-panel__item-action"
+									style={{
+										boxShadow: "none",
+										backgroundColor: "transparent",
+									}}
+									onClick={(e) =>
+										handleEditFileClick(e, linkFile)
+									}
+									title="수정"
+								>
+									<SimpleEditIcon />
+								</button>
+								<button
+									className="ink_group-info-panel__item-action"
+									style={{
+										boxShadow: "none",
+										backgroundColor: "transparent",
+									}}
+									onClick={(e) =>
+										handleDeleteFileLinkClick(
+											e,
+											linkFile.id
+										)
+									}
+									title="삭제"
+								>
+									<SmallCrossIcon />
+								</button>
+							</div>
 						</div>
 					))}
 					<button

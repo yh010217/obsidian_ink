@@ -81,17 +81,20 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 						Object.keys(changes.updated).some(
 							(id) =>
 								id.startsWith("instance_page_state") ||
-								id.startsWith("instance")
+								id.startsWith("instance") ||
+								id.startsWith("page")
 						) ||
 						Object.keys(changes.added).some(
 							(id) =>
 								id.startsWith("instance_page_state") ||
-								id.startsWith("instance")
+								id.startsWith("instance") ||
+								id.startsWith("page")
 						) ||
 						Object.keys(changes.removed).some(
 							(id) =>
 								id.startsWith("instance_page_state") ||
-								id.startsWith("instance")
+								id.startsWith("instance") ||
+								id.startsWith("page")
 						);
 
 					if (!isSelectionRelated) return;
@@ -99,17 +102,29 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 					const currentIds = tlEditor.getSelectedShapeIds();
 					const prevIds = prevSelectedIdsSet.current;
 
-					let hasChanged = currentIds.length !== prevIds.size;
-					if (!hasChanged) {
+					let hasSelectionChanged =
+						currentIds.length !== prevIds.size;
+					if (!hasSelectionChanged) {
 						for (const id of currentIds) {
 							if (!prevIds.has(id)) {
-								hasChanged = true;
+								hasSelectionChanged = true;
 								break;
 							}
 						}
 					}
 
-					if (hasChanged) {
+					const isPageMetaChange =
+						Object.keys(changes.updated).some((id) =>
+							id.startsWith("page")
+						) ||
+						Object.keys(changes.added).some((id) =>
+							id.startsWith("page")
+						) ||
+						Object.keys(changes.removed).some((id) =>
+							id.startsWith("page")
+						);
+
+					if (hasSelectionChanged || isPageMetaChange) {
 						prevSelectedIdsSet.current = new Set(currentIds);
 						updateSelectedGroups(tlEditor);
 					}
@@ -328,6 +343,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 								setAddingFileToGroupId={setAddingFileToGroupId}
 								onEditFile={handleEditFile}
 								onEditGroup={handleEditGroup}
+								getTlEditor={props.getTlEditor}
 							/>
 						);
 					})}

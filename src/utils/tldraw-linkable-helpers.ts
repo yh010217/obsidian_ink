@@ -433,3 +433,38 @@ export function checkDuplicateFile(
         return file.name === fileData.name && file.path === fileData.path;
     });
 }
+
+export function removeFileLinkFromGroup(
+    editor: Editor,
+    groupId: string,
+    fileId: string
+) {
+    editor.run(() => {
+        const currentPageId = editor.getCurrentPageId();
+        const page = editor.store.get(currentPageId);
+        if (page && page.typeName === 'page') {
+            const currentGroups = (page.meta?.linkableGroups as PageLinkableGroups) || {};
+            const targetGroup = currentGroups[groupId];
+
+            if (targetGroup && targetGroup.link_files) {
+                const updatedFiles = targetGroup.link_files.filter(file => file.id !== fileId);
+
+                const newGroupData = {
+                    ...targetGroup,
+                    link_files: updatedFiles
+                };
+
+                editor.updatePage({
+                    id: currentPageId,
+                    meta: {
+                        ...page.meta,
+                        linkableGroups: {
+                            ...currentGroups,
+                            [groupId]: newGroupData
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
