@@ -30,7 +30,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
     const [isSelectionExist, setIsSelectionExist] = React.useState(false);
     const [selectedGroups, setSelectedGroups] = React.useState<string[]>([]);
     const [highlightedGroup, setHighlightedGroup] = React.useState<string | null>(null);
-    const [openFileListGroupId, setOpenFileListGroupId] = React.useState<string | null>(null);
     const [addingFileToGroupId, setAddingFileToGroupId] = React.useState<string | null>(null);
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [isAddFormOpen, setIsAddFormOpen] = React.useState(false);
@@ -157,13 +156,6 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         setIsAddFormOpen(true);
     }
 
-    function handleActionClick(e: React.MouseEvent, groupId: string) {
-        e.stopPropagation();
-        const editor = props.getTlEditor();
-        if (!editor) return;
-        setOpenFileListGroupId(prev => prev === groupId ? null : groupId);
-    }
-
     function handleAddFileClick(e: React.MouseEvent, groupId: string) {
         e.stopPropagation();
         setAddingFileToGroupId(groupId);
@@ -193,6 +185,9 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
         );
     }
 
+    // 하이라이트된 그룹이 있으면 그 그룹만 표시, 없으면 선택된 그룹들 표시
+    const groupsDisplay = highlightedGroup ? [highlightedGroup] : selectedGroups;
+
     return (
         <div className="ink_group-info-panel">
             {isAddFormOpen ? (
@@ -220,7 +215,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
             </button>
                     <div className="ink_group-info-panel__title">그룹 정보</div>
                     <div className="ink_group-info-panel__list">
-                        {selectedGroups.map((groupId) => {
+                        {groupsDisplay.map((groupId) => {
                             const groupInfo = getGroupInfo(groupId);
                             const isHighlighted = highlightedGroup === groupId;
                             const color = groupInfo?.color || "#FF0000";
@@ -232,11 +227,9 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                                     groupName={groupInfo?.name || groupId}
                                     color={color as string}
                                     isHighlighted={isHighlighted}
-                                    openFileListGroupId={openFileListGroupId}
                                     linkFiles={groupInfo?.link_files || []}
                                     onGroupClick={handleGroupClick}
                                     onAddFileClick={handleAddFileClick}
-                                    onActionClick={handleActionClick}
                                     onOpenFile={handleOpenFile}
                                 />
                             );
