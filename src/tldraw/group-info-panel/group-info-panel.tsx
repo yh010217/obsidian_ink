@@ -44,6 +44,9 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 		groupId: string;
 		file: LinkableFileEntry;
 	} | null>(null);
+	const [editingGroupId, setEditingGroupId] = React.useState<string | null>(
+		null
+	);
 
 	const [isCollapsed, setIsCollapsed] = React.useState(false);
 	const [isAddFormOpen, setIsAddFormOpen] = React.useState(false);
@@ -136,6 +139,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 		setIsAddFormOpen(false);
 		setAddingFileToGroupId(null);
 		setEditingFile(null); // Reset edit state on selection change
+		setEditingGroupId(null);
 
 		const selectedShapeIds = editor.getSelectedShapeIds();
 
@@ -216,6 +220,10 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 		setEditingFile({ groupId, file });
 	}
 
+	function handleEditGroup(groupId: string) {
+		setEditingGroupId(groupId);
+	}
+
 	if (isCollapsed) {
 		return (
 			<div
@@ -238,21 +246,29 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 		? [highlightedGroup]
 		: selectedGroups;
 
-	return (
-		<div className="ink_group-info-panel">
-			{isAddFormOpen ? (
+	const renderContent = () => {
+		if (isAddFormOpen) {
+			return (
 				<GroupAddForm
 					getTlEditor={props.getTlEditor}
 					onClose={() => setIsAddFormOpen(false)}
 				/>
-			) : addingFileToGroupId ? (
+			);
+		}
+
+		if (addingFileToGroupId) {
+			return (
 				<GroupAddLinkForm
 					getTlEditor={props.getTlEditor}
 					groupId={addingFileToGroupId}
 					onClose={() => setAddingFileToGroupId(null)}
 					plugin={props.plugin}
 				/>
-			) : editingFile ? (
+			);
+		}
+
+		if (editingFile) {
+			return (
 				<GroupAddLinkForm
 					getTlEditor={props.getTlEditor}
 					groupId={editingFile.groupId}
@@ -260,52 +276,74 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 					onClose={() => setEditingFile(null)}
 					plugin={props.plugin}
 				/>
-			) : (
-				<>
-					<button
-						className="ink_group-info-panel__close-button"
-						style={{ boxShadow: "none" }}
-						onClick={() => setIsCollapsed(true)}
-						title="Close"
+			);
+		}
+
+		if (editingGroupId) {
+			const groupInfo = getGroupInfo(editingGroupId);
+			if (groupInfo) {
+				return (
+					<GroupAddForm
+						getTlEditor={props.getTlEditor}
+						initialData={{
+							id: editingGroupId,
+							name: groupInfo.name || "",
+							color: groupInfo.color || "red",
+						}}
+						onClose={() => setEditingGroupId(null)}
+					/>
+				);
+			}
+			// Fallback if group info not found
+			setEditingGroupId(null);
+		}
+
+		return (
+			<>
+				<button
+					className="ink_group-info-panel__close-button"
+					style={{ boxShadow: "none" }}
+					onClick={() => setIsCollapsed(true)}
+					title="Close"
+				>
+					<SmallCrossIcon />
+				</button>
+				<div className="ink_group-info-panel__title">그룹 정보</div>
+				<div className="ink_group-info-panel__list">
+					{groupsDisplay.map((groupId) => {
+						const groupInfo = getGroupInfo(groupId);
+						const isHighlighted = highlightedGroup === groupId;
+						const color = groupInfo?.color || "#FF0000";
+
+						return (
+							<GroupInfoItem
+								key={groupId}
+								groupId={groupId}
+								groupName={groupInfo?.name || groupId}
+								color={color as string}
+								isHighlighted={isHighlighted}
+								linkFiles={groupInfo?.link_files || []}
+								plugin={props.plugin}
+								onGroupClick={handleGroupClick}
+								setAddingFileToGroupId={setAddingFileToGroupId}
+								onEditFile={handleEditFile}
+								onEditGroup={handleEditGroup}
+							/>
+						);
+					})}
+				</div>
+
+				{isSelectionExist && (
+					<div
+						className="ink_group-info-panel__add-button"
+						onClick={(e) => handleAddClick(e)}
 					>
-						<SmallCrossIcon />
-					</button>
-					<div className="ink_group-info-panel__title">그룹 정보</div>
-					<div className="ink_group-info-panel__list">
-						{groupsDisplay.map((groupId) => {
-							const groupInfo = getGroupInfo(groupId);
-							const isHighlighted = highlightedGroup === groupId;
-							const color = groupInfo?.color || "#FF0000";
-
-							return (
-								<GroupInfoItem
-									key={groupId}
-									groupId={groupId}
-									groupName={groupInfo?.name || groupId}
-									color={color as string}
-									isHighlighted={isHighlighted}
-									linkFiles={groupInfo?.link_files || []}
-									plugin={props.plugin}
-									onGroupClick={handleGroupClick}
-									setAddingFileToGroupId={
-										setAddingFileToGroupId
-									}
-									onEditFile={handleEditFile}
-								/>
-							);
-						})}
+						그룹 추가
 					</div>
+				)}
+			</>
+		);
+	};
 
-					{isSelectionExist && (
-						<div
-							className="ink_group-info-panel__add-button"
-							onClick={(e) => handleAddClick(e)}
-						>
-							그룹 추가
-						</div>
-					)}
-				</>
-			)}
-		</div>
-	);
+	return <div className="ink_group-info-panel">{renderContent()}</div>;
 };

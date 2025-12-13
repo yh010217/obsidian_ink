@@ -345,6 +345,39 @@ export function addFileToGroup(
     });
 }
 
+export function updateLinkableGroup(
+    editor: Editor,
+    groupId: string,
+    data: { name?: string; color?: string }
+) {
+    editor.run(() => {
+        const currentPageId = editor.getCurrentPageId();
+        const page = editor.store.get(currentPageId);
+        if (page && page.typeName === 'page') {
+            const currentGroups = (page.meta?.linkableGroups as PageLinkableGroups) || {};
+            const targetGroup = currentGroups[groupId];
+
+            if (targetGroup) {
+                const newGroupData = {
+                    ...targetGroup,
+                    ...data
+                };
+
+                editor.updatePage({
+                    id: currentPageId,
+                    meta: {
+                        ...page.meta,
+                        linkableGroups: {
+                            ...currentGroups,
+                            [groupId]: newGroupData
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
+
 export function updateFileInGroup(
     editor: Editor,
     groupId: string,

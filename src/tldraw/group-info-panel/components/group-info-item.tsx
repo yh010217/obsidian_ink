@@ -14,6 +14,7 @@ interface GroupInfoItemProps {
 	onGroupClick: (groupId: string) => void;
 	setAddingFileToGroupId: (groupId: string | null) => void;
 	onEditFile: (groupId: string, file: LinkableFileEntry) => void;
+	onEditGroup: (groupId: string) => void;
 }
 
 export const GroupInfoItem = (props: GroupInfoItemProps) => {
@@ -40,6 +41,11 @@ export const GroupInfoItem = (props: GroupInfoItemProps) => {
 		props.onEditFile(props.groupId, file);
 	}
 
+	function handleEditGroupClick(e: React.MouseEvent) {
+		e.stopPropagation();
+		props.onEditGroup(props.groupId);
+	}
+
 	return (
 		<div
 			className={`ink_group-info-panel__item`}
@@ -48,7 +54,28 @@ export const GroupInfoItem = (props: GroupInfoItemProps) => {
 			}}
 			onClick={() => props.onGroupClick(props.groupId)}
 		>
-			{props.groupName || props.groupId}
+			<div
+				style={{
+					display: "flex",
+					justifyContent: "space-between",
+					alignItems: "center",
+				}}
+			>
+				<span>{props.groupName || props.groupId}</span>
+				{props.isHighlighted && (
+					<button
+						className="ink_group-info-panel__item-action"
+						style={{
+							boxShadow: "none",
+							backgroundColor: "transparent",
+						}}
+						onClick={handleEditGroupClick}
+						title="그룹 수정"
+					>
+						<SimpleEditIcon />
+					</button>
+				)}
+			</div>
 			{props.isHighlighted && (
 				<div className="ink_group-info-panel__file-list">
 					{(props.linkFiles || []).map((linkFile, idx) => (
@@ -75,6 +102,7 @@ export const GroupInfoItem = (props: GroupInfoItemProps) => {
 								className="ink_group-info-panel__item-action"
 								style={{
 									boxShadow: "none",
+									backgroundColor: "transparent",
 								}}
 								onClick={(e) =>
 									handleEditFileClick(e, linkFile)
