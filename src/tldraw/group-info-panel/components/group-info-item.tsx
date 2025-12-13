@@ -15,27 +15,13 @@ interface GroupInfoItemProps {
 export const GroupInfoItem = (props: GroupInfoItemProps) => {
     return (
         <div
-            className={`ink_group-info-panel__item ${
-                props.isHighlighted ? "ink_group-info-panel__item--highlighted" : ""
-            }`}
+            className={`ink_group-info-panel__item`}
             style={{
                 borderLeft: `4px solid ${props.color}`,
             }}
             onClick={() => props.onGroupClick(props.groupId)}
         >
             {props.groupName || props.groupId}
-            {props.isHighlighted && (
-                <div className="ink_group-info-panel__item-actions">
-                    <button
-                        className="ink_group-info-panel__action-button"
-                        onClick={(e) => props.onAddFileClick(e, props.groupId)}
-                        title="파일 추가"
-                    >
-                        +
-                    </button>
-                </div>
-            )}
-
             {props.isHighlighted && (
                 <div className="ink_group-info-panel__file-list">
                     {(props.linkFiles || []).map((filePath, idx) => (
@@ -47,6 +33,14 @@ export const GroupInfoItem = (props: GroupInfoItemProps) => {
                             {filePath.name}
                         </div>
                     ))}
+                    <button
+                        className="ink_group-info-panel__action-button"
+                        style={{boxShadow: "none"}}
+                        onClick={(e) => props.onAddFileClick(e, props.groupId)}
+                        title="링크 추가"
+                    >
+                        링크 추가
+                    </button>
                 </div>
             )}
         </div>

@@ -241,7 +241,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
                             className="ink_group-info-panel__add-button"
                             onClick={(e) => handleAddClick(e)}
                         >
-                            추가하기
+                            그룹 추가
                         </div>
                     )}
                 </>
