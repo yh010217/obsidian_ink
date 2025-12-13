@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import "./group-info-panel.scss";
 import * as React from "react";
@@ -41,6 +43,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 	const [isAddFormOpen, setIsAddFormOpen] = React.useState(false);
 
 	// const canvasContainerRef = React.useRef<HTMLDivElement>(null);
+	const prevSelectedIdsSet = React.useRef<Set<TLShapeId>>(new Set());
 	let disposeCloneSync: React.MutableRefObject<(() => void) | undefined> =
 		React.useRef<() => void>();
 
@@ -53,7 +56,7 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 			tlEditor = props.getTlEditor()!;
 			if (!tlEditor) return;
 
-			// TODO : panel에서
+			// TODO : panel에서 하는 것보다 editor에서 하는 게 나을 수도 있음
 			tlEditor.selectNone();
 
 			// Selection 변경 감지
@@ -61,7 +64,46 @@ export const GroupInfoPanel = (props: GroupInfoPanelProps) => {
 				(entry) => {
 					// Changes 정보가 없으면 무시
 					if (!entry.changes) return;
-					updateSelectedGroups(tlEditor);
+
+					// 최적화: instance_page_state (선택, 카메라, 호버 등) 또는 instance (페이지 변경) 변경이 있는 경우에만 처리
+					// 이를 통해 shape 이동/수정 등 선택과 무관한 수많은 이벤트에서 getSelectedShapeIds 호출 방지
+					const changes = entry.changes;
+					const isSelectionRelated =
+						Object.keys(changes.updated).some(
+							(id) =>
+								id.startsWith("instance_page_state") ||
+								id.startsWith("instance")
+						) ||
+						Object.keys(changes.added).some(
+							(id) =>
+								id.startsWith("instance_page_state") ||
+								id.startsWith("instance")
+						) ||
+						Object.keys(changes.removed).some(
+							(id) =>
+								id.startsWith("instance_page_state") ||
+								id.startsWith("instance")
+						);
+
+					if (!isSelectionRelated) return;
+
+					const currentIds = tlEditor.getSelectedShapeIds();
+					const prevIds = prevSelectedIdsSet.current;
+
+					let hasChanged = currentIds.length !== prevIds.size;
+					if (!hasChanged) {
+						for (const id of currentIds) {
+							if (!prevIds.has(id)) {
+								hasChanged = true;
+								break;
+							}
+						}
+					}
+
+					if (hasChanged) {
+						prevSelectedIdsSet.current = new Set(currentIds);
+						updateSelectedGroups(tlEditor);
+					}
 				},
 				{
 					source: "all",
